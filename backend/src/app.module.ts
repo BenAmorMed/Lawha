@@ -10,6 +10,7 @@ import { TemplatesModule } from './templates/templates.module';
 import { ImagesModule } from './images/images.module';
 import { OrdersModule } from './orders/orders.module';
 import { JobsModule } from './jobs/jobs.module';
+import { PaymentModule } from './payments/payment.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { JobsModule } from './jobs/jobs.module';
     ImagesModule,
     OrdersModule,
     JobsModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

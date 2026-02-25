@@ -18,6 +18,10 @@
     "react-konva": "^18.2.10",
     "use-image": "^1.0.7",
     "axios": "^1.6.2",
+    "@stripe/react-stripe-js": "^2.4.0",
+    "@stripe/stripe-js": "^2.1.8",
+    "jspdf": "^2.5.1",
+    "html2canvas": "^1.4.1",
     "typescript": "^5.3.3",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15"
