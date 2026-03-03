@@ -1,0 +1,12 @@
+# .gitignore (backend)
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+coverage/
+*.pem
+*.key
+*.cert
+.DS_Store

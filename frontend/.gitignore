@@ -1,0 +1,10 @@
+# .gitignore (frontend)
+.next/
+node_modules/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+.DS_Store

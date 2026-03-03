@@ -1,0 +1,21 @@
+# .gitignore (racine)
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.next/
+*.pem
+*.key
+*.cert
+coverage/
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
