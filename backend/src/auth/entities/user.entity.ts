@@ -10,17 +10,17 @@ export class User {
   email: string;
 
   @Column('text')
-  password_hash: string;
+  passwordHash: string;
 
   @Column('varchar', { length: 255, nullable: true })
-  full_name: string;
+  fullName: string;
 
   @Column('varchar', { length: 20, default: 'customer' })
   role: 'customer' | 'admin';
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({ name: 'createdAt' })
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  updated_at: Date;
+  @UpdateDateColumn({ name: 'updatedAt' })
+  updatedAt: Date;
 }

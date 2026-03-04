@@ -14,10 +14,10 @@ export class AuthService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, full_name } = registerDto;
+    const { email, password, fullName } = registerDto;
 
     // Check if user already exists
     const existingUser = await this.usersRepository.findOne({
@@ -29,13 +29,13 @@ export class AuthService {
     }
 
     // Hash password
-    const password_hash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     // Create new user
     const user = this.usersRepository.create({
       email,
-      password_hash,
-      full_name: full_name || null,
+      passwordHash,
+      fullName: fullName || null,
       role: 'customer',
     });
 
@@ -57,7 +57,7 @@ export class AuthService {
     }
 
     // Verify password
-    const passwordValid = await bcrypt.compare(password, user.password_hash);
+    const passwordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
@@ -102,9 +102,9 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
-      full_name: user.full_name,
+      fullName: user.fullName,
       role: user.role,
-      created_at: user.created_at,
+      createdAt: user.createdAt,
     };
   }
 }

@@ -54,7 +54,7 @@ export class EmailService {
       };
 
       const sendGridApiKey = this.configService.get('SENDGRID_API_KEY');
-      
+
       // In development without API key, just log
       if (!sendGridApiKey) {
         this.logger.log(`[MOCK EMAIL] To: ${options.to}, Subject: ${options.subject}`);
@@ -78,7 +78,7 @@ export class EmailService {
       to: userEmail,
       subject: `Order Confirmed - #${order.id.substring(0, 8).toUpperCase()}`,
       html,
-      text: `Your order #${order.id.substring(0, 8).toUpperCase()} has been confirmed for $${order.total_amount.toFixed(2)}`,
+      text: `Your order #${order.id.substring(0, 8).toUpperCase()} has been confirmed for $${order.total.toFixed(2)}`,
     });
   }
 
@@ -88,7 +88,7 @@ export class EmailService {
       to: userEmail,
       subject: `Payment Received - Order #${order.id.substring(0, 8).toUpperCase()}`,
       html,
-      text: `Payment of $${order.total_amount.toFixed(2)} has been successfully received for your order.`,
+      text: `Payment of $${order.total.toFixed(2)} has been successfully received for your order.`,
     });
   }
 
@@ -123,7 +123,7 @@ export class EmailService {
   }
 
   private getOrderConfirmationTemplate(order: Order): string {
-    const orderTotal = order.total_amount.toFixed(2);
+    const orderTotal = order.total.toFixed(2);
     return `
       <!DOCTYPE html>
       <html>
@@ -199,7 +199,7 @@ export class EmailService {
             <div class="section">
               <h2>Payment Confirmed</h2>
               <p>Your payment has been successfully processed. Your canvas is now in production!</p>
-              <div class="amount">$${order.total_amount.toFixed(2)}</div>
+              <div class="amount">$${order.total.toFixed(2)}</div>
             </div>
 
             <div class="section">
@@ -244,7 +244,7 @@ export class EmailService {
             <div class="section">
               <h2>We Couldn't Process Your Payment</h2>
               <p>${reason || 'Your payment could not be processed. This could be due to insufficient funds, expired card, or other issues.'}</p>
-              <p><strong>Order Total:</strong> $${order.total_amount.toFixed(2)}</p>
+              <p><strong>Order Total:</strong> $${order.total.toFixed(2)}</p>
             </div>
 
             <div class="section">

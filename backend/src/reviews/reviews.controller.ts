@@ -21,7 +21,7 @@ export class ReviewsController {
   /**
    * Create a review for a product
    * Requires authentication
-   * Body: { rating (1-5), title, comment, product_id, order_id? }
+   * Body: { rating (1-5), title, comment, productId, orderId? }
    */
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -39,7 +39,7 @@ export class ReviewsController {
       rating: review.rating,
       title: review.title,
       comment: review.comment,
-      created_at: review.created_at,
+      created_at: review.createdAt,
     };
   }
 

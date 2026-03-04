@@ -32,8 +32,9 @@ import { ReviewsModule } from './reviews/reviews.module';
         username: configService.get('DB_USERNAME', 'canvas_user'),
         password: configService.get('DB_PASSWORD', 'canvas_secret'),
         database: configService.get('DB_NAME', 'canvas_platform'),
-        entities: ['src/**/*.entity{.ts,.js}'],
-        synchronize: false, // Schema comes from database
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        ssl: { rejectUnauthorized: false },
+        synchronize: false,
         logging: false,
       }),
     }),
@@ -62,4 +63,4 @@ import { ReviewsModule } from './reviews/reviews.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

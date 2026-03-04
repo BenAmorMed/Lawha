@@ -17,28 +17,28 @@ export class ReviewsService {
     private ordersRepository: Repository<Order>,
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
-  ) {}
+  ) { }
 
   async createReview(
     userId: string,
     createReviewDto: CreateReviewDto,
   ): Promise<Review> {
-    const { product_id, order_id } = createReviewDto;
+    const { productId, orderId } = createReviewDto;
 
     // Verify product exists
     const product = await this.productsRepository.findOne({
-      where: { id: product_id },
+      where: { id: productId },
     });
 
     if (!product) {
-      throw new NotFoundException(`Product ${product_id} not found`);
+      throw new NotFoundException(`Product ${productId} not found`);
     }
 
     // Check if user already reviewed this product
     const existingReview = await this.reviewsRepository.findOne({
       where: {
-        user_id: userId,
-        product_id,
+        userId: userId,
+        productId,
       },
     });
 
@@ -50,12 +50,12 @@ export class ReviewsService {
 
     let verifiedPurchase = false;
 
-    // If order_id provided, verify it belongs to the user and contains the product
-    if (order_id) {
+    // If orderId provided, verify it belongs to the user and contains the product
+    if (orderId) {
       const order = await this.ordersRepository.findOne({
         where: {
-          id: order_id,
-          user_id: userId,
+          id: orderId,
+          userId: userId,
         },
         relations: ['items'],
       });
@@ -65,21 +65,21 @@ export class ReviewsService {
       }
 
       // Check if order contains this product
-      const hasProduct = order.items?.some((item) => item.product_id === product_id);
+      const hasProduct = order.items?.some((item) => item.productId === productId);
       verifiedPurchase = hasProduct ? true : false;
     }
 
     const review = this.reviewsRepository.create({
       ...createReviewDto,
-      user_id: userId,
-      order_id: order_id || null,
-      verified_purchase: verifiedPurchase,
+      userId: userId,
+      orderId: orderId || null,
+      verifiedPurchase: verifiedPurchase,
     });
 
     await this.reviewsRepository.save(review);
 
     this.logger.log(
-      `Review created by user ${userId} for product ${product_id}`,
+      `Review created by user ${userId} for product ${productId}`,
       ReviewsService.name,
     );
 
@@ -94,17 +94,17 @@ export class ReviewsService {
   ) {
     const query = this.reviewsRepository
       .createQueryBuilder('review')
-      .where('review.product_id = :productId', { productId })
+      .where('review.productId = :productId', { productId })
       .leftJoinAndSelect('review.user', 'user')
       .skip(offset)
       .take(limit);
 
     if (sortBy === 'helpful') {
-      query.orderBy('review.helpful_count', 'DESC');
+      query.orderBy('review.helpfulCount', 'DESC');
     } else if (sortBy === 'rating') {
       query.orderBy('review.rating', 'DESC');
     } else {
-      query.orderBy('review.created_at', 'DESC');
+      query.orderBy('review.createdAt', 'DESC');
     }
 
     const [reviews, total] = await query.getManyAndCount();
@@ -114,7 +114,7 @@ export class ReviewsService {
       .createQueryBuilder('review')
       .select('AVG(review.rating)', 'avg_rating')
       .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.product_id = :productId', { productId })
+      .where('review.productId = :productId', { productId })
       .getRawOne();
 
     return {
@@ -123,10 +123,10 @@ export class ReviewsService {
         rating: review.rating,
         title: review.title,
         comment: review.comment,
-        user_email: review.user?.email,
-        verified_purchase: review.verified_purchase,
-        helpful_count: review.helpful_count,
-        created_at: review.created_at,
+        userEmail: review.user?.email,
+        verifiedPurchase: review.verifiedPurchase,
+        helpfulCount: review.helpfulCount,
+        createdAt: review.createdAt,
       })),
       pagination: {
         total,
@@ -147,9 +147,9 @@ export class ReviewsService {
     offset: number = 0,
   ) {
     const [reviews, total] = await this.reviewsRepository.find({
-      where: { user_id: userId },
+      where: { userId: userId },
       relations: ['product'],
-      order: { created_at: 'DESC' },
+      order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,
     });
@@ -186,7 +186,7 @@ export class ReviewsService {
     const review = await this.getReviewById(reviewId);
 
     // Verify ownership
-    if (review.user_id !== userId) {
+    if (review.userId !== userId) {
       throw new BadRequestException('You can only edit your own reviews');
     }
 
@@ -205,7 +205,7 @@ export class ReviewsService {
     const review = await this.getReviewById(reviewId);
 
     // Verify ownership
-    if (review.user_id !== userId) {
+    if (review.userId !== userId) {
       throw new BadRequestException('You can only delete your own reviews');
     }
 
@@ -221,12 +221,12 @@ export class ReviewsService {
     const review = await this.getReviewById(reviewId);
 
     // Check if user already marked as helpful
-    if (review.helpful_by?.includes(userId)) {
+    if (review.helpfulBy?.includes(userId)) {
       throw new BadRequestException('You have already marked this as helpful');
     }
 
-    review.helpful_count += 1;
-    review.helpful_by = [...(review.helpful_by || []), userId];
+    review.helpfulCount += 1;
+    review.helpfulBy = [...(review.helpfulBy || []), userId];
 
     await this.reviewsRepository.save(review);
 
@@ -238,19 +238,19 @@ export class ReviewsService {
       .createQueryBuilder('review')
       .select('review.rating', 'rating')
       .addSelect('COUNT(review.id)', 'count')
-      .where('review.product_id = :productId', { productId })
+      .where('review.productId = :productId', { productId })
       .groupBy('review.rating')
       .orderBy('review.rating', 'DESC')
       .getRawMany();
 
     const totalReviews = await this.reviewsRepository.count({
-      where: { product_id: productId },
+      where: { productId: productId },
     });
 
     const avgRating = await this.reviewsRepository
       .createQueryBuilder('review')
       .select('AVG(review.rating)', 'avg')
-      .where('review.product_id = :productId', { productId })
+      .where('review.productId = :productId', { productId })
       .getRawOne();
 
     return {
@@ -279,11 +279,11 @@ export class ReviewsService {
       .take(limit);
 
     if (sortBy === 'helpful') {
-      query.orderBy('review.helpful_count', 'DESC');
+      query.orderBy('review.helpfulCount', 'DESC');
     } else if (sortBy === 'rating') {
       query.orderBy('review.rating', 'DESC');
     } else {
-      query.orderBy('review.created_at', 'DESC');
+      query.orderBy('review.createdAt', 'DESC');
     }
 
     const [reviews, total] = await query.getManyAndCount();

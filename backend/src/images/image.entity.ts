@@ -36,6 +36,12 @@ export class UploadedImage {
   @Column({ type: 'varchar', length: 255, nullable: true })
   s3_thumbnail_url: string;
 
+  @Column({ type: 'boolean', default: true })
+  dpi_ok: boolean;
+
+  @Column({ type: 'int', default: 100 })
+  quality_score: number;
+
   @Column({ type: 'text', nullable: true })
   metadata: string; // JSON stringified
 
@@ -43,10 +49,10 @@ export class UploadedImage {
   is_active: boolean;
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updatedAt: Date;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })

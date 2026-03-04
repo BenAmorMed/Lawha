@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { computeDpiReport } from './dpi.helper';
 
 describe('checkDpi — logique DPI via computeDpiReport()', () => {

@@ -23,11 +23,11 @@ export class CreateReviewDto {
   comment: string;
 
   @IsUUID()
-  product_id: string;
+  productId: string;
 
   @IsUUID()
   @IsOptional()
-  order_id?: string;
+  orderId?: string;
 }
 
 export class UpdateReviewDto {
@@ -53,11 +53,11 @@ export class ReviewResponseDto {
   rating: number;
   title: string;
   comment: string;
-  user_id: string;
-  user_email?: string;
-  product_id: string;
-  verified_purchase: boolean;
-  helpful_count: number;
-  created_at: Date;
-  updated_at: Date;
+  userId: string;
+  userEmail?: string;
+  productId: string;
+  verifiedPurchase: boolean;
+  helpfulCount: number;
+  createdAt: Date;
+  updatedAt: Date;
 }

@@ -1,38 +1,43 @@
 export class ProductSizeDto {
   id: string;
-  product_id: string;
-  name: string;
-  dimensions: string;
-  price_modifier: number;
+  productId: string;
+  label: string;
+  widthCm: number;
+  heightCm: number;
+  priceDelta: number;
+  active: boolean;
 }
 
 export class FrameOptionDto {
   id: string;
-  name: string;
-  description: string;
-  price_modifier: number;
+  productId: string;
+  label: string;
+  colorHex: string;
+  material: string;
+  priceDelta: number;
+  active: boolean;
 }
 
 export class ProductDto {
   id: string;
   name: string;
   description: string;
-  base_price: number;
+  basePrice: number;
   category: string;
-  image_url: string;
-  is_active: boolean;
-  created_at: Date;
+  imageUrl: string;
+  isActive: boolean;
+  createdAt: Date;
   sizes: ProductSizeDto[];
-  frame_options: FrameOptionDto[];
+  frameOptions: FrameOptionDto[];
 }
 
 export class ProductListDto {
   id: string;
   name: string;
   category: string;
-  base_price: number;
-  image_url: string;
-  is_active: boolean;
+  basePrice: number;
+  imageUrl: string;
+  isActive: boolean;
 }
 
 export class TemplateDto {
@@ -40,7 +45,7 @@ export class TemplateDto {
   name: string;
   description: string;
   category: string;
-  preview_url: string;
+  previewUrl: string;
   definition: Record<string, any>;
-  created_at: Date;
+  createdAt: Date;
 }

@@ -1,8 +1,8 @@
 export class CreateOrderItemDto {
-  product_id: string;
+  productId: string;
   quantity: number;
-  size_selected?: string;
-  frame_option?: string;
+  sizeSelected?: string;
+  frameOption?: string;
 }
 
 export class CreateOrderDto {
@@ -12,33 +12,33 @@ export class CreateOrderDto {
 
 export class OrderItemResponseDto {
   id: string;
-  product_id: string;
+  productId: string;
   quantity: number;
   unit_price: number;
-  size_selected: string;
-  frame_option: string;
+  sizeSelected: string;
+  frameOption: string;
   subtotal: number;
-  created_at: Date;
+  createdAt: Date;
 }
 
 export class OrderResponseDto {
   id: string;
   user_id: string;
   status: string;
-  total_amount: number;
+  total: number;
   shipping_address: string;
   tracking_number: string;
   items: OrderItemResponseDto[];
-  created_at: Date;
-  updated_at: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class OrderListDto {
   id: string;
   status: string;
-  total_amount: number;
+  total: number;
   items_count: number;
-  created_at: Date;
+  createdAt: Date;
   shipped_at: Date;
 }
 

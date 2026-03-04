@@ -19,11 +19,11 @@ import { ImagesService, IFile } from './images.service';
 import { ImageListDto, ImageMetadataDto } from './images.dto';
 
 @Controller('api/v1/images')
-@UseGuards(JwtAuthGuard)
 export class ImagesController {
   constructor(private readonly imagesService: ImagesService) { }
 
   @Post('upload')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.CREATED)
   async uploadImage(
@@ -37,7 +37,16 @@ export class ImagesController {
     return this.imagesService.uploadImage(file, user.id, widthCm, heightCm, 300);
   }
 
+  @Post('upload-preview')
+  @HttpCode(HttpStatus.CREATED)
+  async uploadPreview(
+    @Body('dataUrl') dataUrl: string,
+  ): Promise<{ previewUrl: string } | null> {
+    return this.imagesService.uploadPreview(dataUrl);
+  }
+
   @Get()
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getMyImages(@CurrentUser() user: User): Promise<ImageListDto[]> {
     return this.imagesService.getUserImages(user.id);
@@ -50,6 +59,7 @@ export class ImagesController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteImage(@Param('id') imageId: string, @CurrentUser() user: User): Promise<void> {
     return this.imagesService.deleteImage(imageId, user.id);

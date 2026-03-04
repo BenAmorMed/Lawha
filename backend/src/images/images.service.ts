@@ -122,10 +122,37 @@ export class ImagesService {
     };
   }
 
+  async uploadPreview(dataUrl: string): Promise<{ previewUrl: string } | null> {
+    try {
+      if (!dataUrl.startsWith('data:image/')) {
+        throw new Error('Invalid dataUrl format');
+      }
+
+      const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+        throw new Error('Invalid base64 string');
+      }
+
+      const mimeType = matches[1];
+      const buffer = Buffer.from(matches[2], 'base64');
+
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(7);
+      const filename = `previews/preview-${timestamp}-${random}.png`;
+
+      const previewUrl = await this.uploadToMinIO(filename, buffer, mimeType);
+
+      return { previewUrl };
+    } catch (error) {
+      console.error('Failed to upload preview', error);
+      return null;
+    }
+  }
+
   async getUserImages(userId: string): Promise<ImageListDto[]> {
     const images = await this.imageRepository.find({
       where: { user_id: userId, is_active: true },
-      order: { created_at: 'DESC' },
+      order: { createdAt: 'DESC' },
     });
 
     return images.map((img) => ({
@@ -136,7 +163,7 @@ export class ImagesService {
       dpi: img.dpi,
       s3_thumbnail_url: img.s3_thumbnail_url,
       file_size: img.file_size,
-      created_at: img.created_at,
+      createdAt: img.createdAt,
     }));
   }
 

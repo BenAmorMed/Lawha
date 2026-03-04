@@ -13,5 +13,5 @@ export class RegisterDto {
   @MinLength(2)
   @MaxLength(255)
   @IsOptional()
-  full_name?: string;
+  fullName?: string;
 }

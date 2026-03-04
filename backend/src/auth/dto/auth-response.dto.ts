@@ -1,9 +1,9 @@
 export class AuthResponseDto {
   id: string;
   email: string;
-  full_name: string;
+  fullName: string;
   role: string;
-  created_at: Date;
+  createdAt: Date;
 }
 
 export class LoginResponseDto {

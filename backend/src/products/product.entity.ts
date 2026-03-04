@@ -1,5 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
+import { ProductSize } from './entities/product-size.entity';
+import { FrameOption } from './entities/frame-option.entity';
 
 @Entity('products')
 export class Product {
@@ -12,27 +14,33 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  base_price: number;
+  @Column({ name: 'base_price', type: 'decimal', precision: 10, scale: 2 })
+  basePrice: number;
 
   @Column({ type: 'varchar', length: 100 })
   category: string; // e.g., 'canvas', 'poster', 'acrylic'
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  image_url: string;
+  @Column({ name: 'image_url', type: 'varchar', length: 255, nullable: true })
+  imageUrl: string;
 
-  @Column({ type: 'int', default: 0 })
-  stock_quantity: number;
+  @Column({ name: 'stock_quantity', type: 'int', default: 0 })
+  stockQuantity: number;
 
-  @Column({ type: 'boolean', default: true })
-  is_active: boolean;
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  updated_at: Date;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 
   @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
-  order_items: OrderItem[];
+  orderItems: OrderItem[];
+
+  @OneToMany(() => ProductSize, (size) => size.product)
+  sizes: ProductSize[];
+
+  @OneToMany(() => FrameOption, (frame) => frame.product)
+  frames: FrameOption[];
 }

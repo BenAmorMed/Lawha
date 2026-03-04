@@ -10,20 +10,20 @@ export class AdminService {
   constructor(
     @InjectRepository(Order)
     private ordersRepository: Repository<Order>,
-  ) {}
+  ) { }
 
   async getAllOrders(filters: {
     status?: string;
     limit?: number;
     offset?: number;
-    sortBy?: 'created_at' | 'total_amount' | 'status';
+    sortBy?: 'createdAt' | 'total' | 'status';
     sortOrder?: 'ASC' | 'DESC';
   }) {
     const {
       status,
       limit = 20,
       offset = 0,
-      sortBy = 'created_at',
+      sortBy = 'createdAt',
       sortOrder = 'DESC',
     } = filters;
 
@@ -46,14 +46,14 @@ export class AdminService {
     return {
       data: orders.map((order) => ({
         id: order.id,
-        user_email: order.user?.email,
-        user_id: order.user_id,
+        userEmail: order.user?.email,
+        userId: order.userId,
         status: order.status,
-        total_amount: order.total_amount,
-        items_count: order.items?.length || 0,
-        created_at: order.created_at,
-        updated_at: order.updated_at,
-        tracking_number: order.tracking_number,
+        total: order.total,
+        itemsCount: order.items?.length || 0,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        trackingNumber: order.trackingNumber,
       })),
       pagination: {
         total,
@@ -76,17 +76,17 @@ export class AdminService {
 
     return {
       id: order.id,
-      user_email: order.user?.email,
-      user_id: order.user_id,
+      userEmail: order.user?.email,
+      userId: order.userId,
       status: order.status,
-      total_amount: order.total_amount,
-      shipping_address: order.shipping_address,
-      tracking_number: order.tracking_number,
+      total: order.total,
+      shippingAddr: order.shippingAddr,
+      trackingNumber: order.trackingNumber,
       items: order.items,
-      created_at: order.created_at,
-      updated_at: order.updated_at,
-      shipped_at: order.shipped_at,
-      delivered_at: order.delivered_at,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
     };
   }
 
@@ -120,15 +120,15 @@ export class AdminService {
     order.status = status as OrderStatus;
 
     if (trackingNumber) {
-      order.tracking_number = trackingNumber;
+      order.trackingNumber = trackingNumber;
     }
 
-    if (status === 'shipped' && !order.shipped_at) {
-      order.shipped_at = new Date();
+    if (status === 'shipped' && !order.shippedAt) {
+      order.shippedAt = new Date();
     }
 
-    if (status === 'delivered' && !order.delivered_at) {
-      order.delivered_at = new Date();
+    if (status === 'delivered' && !order.deliveredAt) {
+      order.deliveredAt = new Date();
     }
 
     await this.ordersRepository.save(order);
@@ -141,9 +141,9 @@ export class AdminService {
     return {
       id: order.id,
       status: order.status,
-      tracking_number: order.tracking_number,
-      shipped_at: order.shipped_at,
-      delivered_at: order.delivered_at,
+      trackingNumber: order.trackingNumber,
+      shippedAt: order.shippedAt,
+      deliveredAt: order.deliveredAt,
     };
   }
 
@@ -162,7 +162,7 @@ export class AdminService {
     // Revenue (total amount from completed orders)
     const revenue = await this.ordersRepository
       .createQueryBuilder('order')
-      .select('SUM(order.total_amount)', 'total')
+      .select('SUM(order.total)', 'total')
       .where('order.status IN (:...statuses)', {
         statuses: ['shipped', 'delivered'],
       })
@@ -171,7 +171,7 @@ export class AdminService {
     // Average order value
     const avgValue = await this.ordersRepository
       .createQueryBuilder('order')
-      .select('AVG(order.total_amount)', 'average')
+      .select('AVG(order.total)', 'average')
       .getRawOne();
 
     // Recent orders (last 7 days)
@@ -180,17 +180,17 @@ export class AdminService {
 
     const recentOrders = await this.ordersRepository
       .createQueryBuilder('order')
-      .where('order.created_at >= :date', { date: sevenDaysAgo })
+      .where('order.createdAt >= :date', { date: sevenDaysAgo })
       .getCount();
 
     // Orders by day (last 7 days)
     const ordersByDay = await this.ordersRepository
       .createQueryBuilder('order')
-      .select('DATE(order.created_at)', 'date')
+      .select('DATE(order.createdAt)', 'date')
       .addSelect('COUNT(order.id)', 'count')
-      .where('order.created_at >= :date', { date: sevenDaysAgo })
-      .groupBy('DATE(order.created_at)')
-      .orderBy('DATE(order.created_at)', 'ASC')
+      .where('order.createdAt >= :date', { date: sevenDaysAgo })
+      .groupBy('DATE(order.createdAt)')
+      .orderBy('DATE(order.createdAt)', 'ASC')
       .getRawMany();
 
     return {
@@ -245,15 +245,15 @@ export class AdminService {
       order.status = status as OrderStatus;
 
       if (trackingNumber) {
-        order.tracking_number = trackingNumber;
+        order.trackingNumber = trackingNumber;
       }
 
-      if (status === 'shipped' && !order.shipped_at) {
-        order.shipped_at = new Date();
+      if (status === 'shipped' && !order.shippedAt) {
+        order.shippedAt = new Date();
       }
 
-      if (status === 'delivered' && !order.delivered_at) {
-        order.delivered_at = new Date();
+      if (status === 'delivered' && !order.deliveredAt) {
+        order.deliveredAt = new Date();
       }
 
       return order;

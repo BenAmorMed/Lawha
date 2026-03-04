@@ -19,7 +19,7 @@ export class PaymentController {
   constructor(
     private paymentService: PaymentService,
     private ordersService: OrdersService
-  ) {}
+  ) { }
 
   /**
    * Create a payment intent for an order
@@ -34,12 +34,12 @@ export class PaymentController {
   ) {
     // Verify order exists and belongs to user
     const order = await this.ordersService.getOrderById(orderId, user.id);
-    
+
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.user_id !== user.id) {
+    if (order.userId !== user.id) {
       throw new BadRequestException('Order does not belong to this user');
     }
 
@@ -70,12 +70,12 @@ export class PaymentController {
   ) {
     // Verify order exists
     const order = await this.ordersService.getOrderById(orderId, user.id);
-    
+
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.user_id !== user.id) {
+    if (order.userId !== user.id) {
       throw new BadRequestException('Order does not belong to this user');
     }
 

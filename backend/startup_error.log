@@ -1,0 +1,50 @@
+﻿ments\2025-2026\stage\P
+roject\files\backend\no
+de_modules\typeorm\quer
+y-builder\SelectQueryBu
+ilder.js:2231:25)
+    at async SelectQuer
+yBuilder.executeEntitie
+sAndRawResults (C:\User
+s\bichiou\Documents\202
+5-2026\stage\Project\fi
+les\backend\node_module
+s\typeorm\query-builder
+\SelectQueryBuilder.js:
+2079:26)
+    at async SelectQuer
+yBuilder.getRawAndEntit
+ies (C:\Users\bichiou\D
+ocuments\2025-2026\stag
+e\Project\files\backend
+\node_modules\typeorm\q
+uery-builder\SelectQuer
+yBuilder.js:684:29)
+    at async SelectQuer
+yBuilder.getMany (C:\Us
+ers\bichiou\Documents\2
+025-2026\stage\Project\
+files\backend\node_modu
+les\typeorm\query-build
+er\SelectQueryBuilder.j
+s:750:25)
+    at async ProductsSe
+rvice.getAllProducts (C
+:\Users\bichiou\Documen
+ts\2025-2026\stage\Proj
+ect\files\backend\dist\
+products\products.servi
+ce.js:25:26)
+    at async C:\Users\b
+ichiou\Documents\2025-2
+026\stage\Project\files
+\backend\node_modules\@
+nestjs\core\router\rout
+er-execution-context.js
+:46:28
+    at async C:\Users\b
+ichiou\Documents\2025-2
+026\stage\Project\files
+\backend\node_modules\@
+nestjs\core\router\rout
+er-proxy.js:9:17

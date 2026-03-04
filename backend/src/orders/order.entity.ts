@@ -3,7 +3,7 @@ import { User } from '../auth/entities/user.entity';
 import { OrderItem } from './order-item.entity';
 
 export enum OrderStatus {
-  PENDING = 'pending',
+  PENDING_PAYMENT = 'pending_payment',
   PROCESSING = 'processing',
   PRINTING = 'printing',
   SHIPPED = 'shipped',
@@ -16,35 +16,38 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid')
-  user_id: string;
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId: string;
 
-  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
+  @Column({ name: 'guest_email', type: 'varchar', length: 255, nullable: true })
+  guestEmail: string;
+
+  @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING_PAYMENT })
   status: OrderStatus;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  total_amount: number;
+  @Column({ name: 'total_amount', type: 'decimal', precision: 10, scale: 2 })
+  total: number;
 
-  @Column({ type: 'text', nullable: true })
-  shipping_address: string;
+  @Column({ name: 'shipping_address', type: 'jsonb', nullable: true })
+  shippingAddr: any;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  tracking_number: string;
+  @Column({ name: 'tracking_number', type: 'varchar', length: 255, nullable: true })
+  trackingNumber: string;
 
-  @Column({ type: 'text', nullable: true })
-  print_pdf_url: string;
+  @Column({ name: 'print_pdf_url', type: 'text', nullable: true })
+  printPdfUrl: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  shipped_at: Date;
+  @Column({ name: 'shipped_at', type: 'timestamp', nullable: true })
+  shippedAt: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
-  delivered_at: Date;
+  @Column({ name: 'delivered_at', type: 'timestamp', nullable: true })
+  deliveredAt: Date;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn()
-  updated_at: Date;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })

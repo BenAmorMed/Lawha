@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import Stripe from 'stripe';
 import { Order } from '../orders/order.entity';
 import { User } from '../auth/entities/user.entity';
+import PDFDocument from 'pdfkit';
 import { EmailService } from '../email/email.service';
 
 @Injectable()
@@ -58,7 +59,7 @@ export class PaymentService {
 
     // Get the charge ID from latest_charge
     const chargeId = paymentIntent.latest_charge;
-    
+
     if (!chargeId || typeof chargeId !== 'string') {
       throw new Error('No charges found for this payment intent');
     }
@@ -73,7 +74,7 @@ export class PaymentService {
 
   async constructWebhookEvent(body: Buffer, signature: string): Promise<Stripe.Event> {
     const webhookSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
-    
+
     return this.stripe.webhooks.constructEvent(body, signature, webhookSecret);
   }
 
@@ -107,7 +108,7 @@ export class PaymentService {
       }
 
       const user = await this.userRepository.findOne({
-        where: { id: order.user_id },
+        where: { id: order.userId },
       });
 
       if (!user || !user.email) {
@@ -134,7 +135,7 @@ export class PaymentService {
       }
 
       const user = await this.userRepository.findOne({
-        where: { id: order.user_id },
+        where: { id: order.userId },
       });
 
       if (!user || !user.email) {
@@ -161,7 +162,7 @@ export class PaymentService {
       }
 
       const user = await this.userRepository.findOne({
-        where: { id: order.user_id },
+        where: { id: order.userId },
       });
 
       if (!user || !user.email) {

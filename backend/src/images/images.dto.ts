@@ -17,7 +17,7 @@ export class ImageResponseDto {
   dpi: number;
   s3_url: string;
   s3_thumbnail_url: string;
-  created_at: Date;
+  createdAt: Date;
 }
 
 export class ImageListDto {
@@ -28,7 +28,7 @@ export class ImageListDto {
   dpi: number;
   s3_thumbnail_url: string;
   file_size: number;
-  created_at: Date;
+  createdAt: Date;
 }
 
 export class ImageMetadataDto {

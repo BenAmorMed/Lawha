@@ -15,7 +15,7 @@ import { AdminService } from './admin.service';
 @Controller('api/v1/admin/orders')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   /**
    * Get all orders with filtering and pagination
@@ -23,7 +23,7 @@ export class AdminController {
    * - status: Filter by order status (pending, processing, shipped, delivered, etc.)
    * - limit: Items per page (default: 20)
    * - offset: Pagination offset (default: 0)
-   * - sortBy: Sort field (created_at, total_amount, status)
+   * - sortBy: Sort field (createdAt, total, status)
    * - sortOrder: ASC or DESC
    */
   @Get()
@@ -31,7 +31,7 @@ export class AdminController {
     @Query('status') status?: string,
     @Query('limit') limit: string = '20',
     @Query('offset') offset: string = '0',
-    @Query('sortBy') sortBy: 'created_at' | 'total_amount' | 'status' = 'created_at',
+    @Query('sortBy') sortBy: 'createdAt' | 'total' | 'status' = 'createdAt',
     @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'DESC',
   ) {
     return this.adminService.getAllOrders({
@@ -55,40 +55,40 @@ export class AdminController {
    * Update single order status
    * Body:
    * - status: New order status
-   * - tracking_number?: Optional tracking number when shipping
+   * - trackingNumber?: Optional tracking number when shipping
    */
   @Patch(':id/status')
   async updateOrderStatus(
     @Param('id') orderId: string,
-    @Body() body: { status: string; tracking_number?: string },
+    @Body() body: { status: string; trackingNumber?: string },
   ) {
     return this.adminService.updateOrderStatus(
       orderId,
       body.status,
-      body.tracking_number,
+      body.trackingNumber,
     );
   }
 
   /**
    * Bulk update order statuses
    * Body:
-   * - order_ids: Array of order IDs to update
+   * - orderIds: Array of order IDs to update
    * - status: New status for all orders
-   * - tracking_number?: Optional tracking number
+   * - trackingNumber?: Optional tracking number
    */
   @Post('bulk-update')
   async bulkUpdateStatus(
     @Body()
     body: {
-      order_ids: string[];
+      orderIds: string[];
       status: string;
-      tracking_number?: string;
+      trackingNumber?: string;
     },
   ) {
     return this.adminService.bulkUpdateStatus(
-      body.order_ids,
+      body.orderIds,
       body.status,
-      body.tracking_number,
+      body.trackingNumber,
     );
   }
 
