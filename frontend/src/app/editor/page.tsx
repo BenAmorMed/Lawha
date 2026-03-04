@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { CanvasEditor } from '@/components/editor/ConvaCanvasEditor';
+import { ImageUploadPanel } from '@/components/editor/ImageUploadPanel';
 import { useEditorStore } from '@/store/editorStore';
+import { ShoppingCart, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface CanvasSize {
   id: string;
@@ -10,111 +12,85 @@ interface CanvasSize {
   width: number;
   height: number;
   dpi: number;
+  widthCm: number;
+  heightCm: number;
 }
 
 const CANVAS_SIZES: CanvasSize[] = [
-  { id: '8x10', name: 'Small (8x10")', width: 2400, height: 3000, dpi: 300 },
-  { id: '12x16', name: 'Medium (12x16")', width: 3600, height: 4800, dpi: 300 },
-  { id: '16x20', name: 'Large (16x20")', width: 4800, height: 6000, dpi: 300 },
-  { id: '20x24', name: 'XL (20x24")', width: 6000, height: 7200, dpi: 300 },
+  { id: '8x10', name: 'Small (8x10")', width: 2400, height: 3000, dpi: 300, widthCm: 20, heightCm: 25 },
+  { id: '12x16', name: 'Medium (12x16")', width: 3600, height: 4800, dpi: 300, widthCm: 30, heightCm: 40 },
+  { id: '16x20', name: 'Large (16x20")', width: 4800, height: 6000, dpi: 300, widthCm: 40, heightCm: 50 },
+  { id: '20x24', name: 'XL (20x24")', width: 6000, height: 7200, dpi: 300, widthCm: 50, heightCm: 60 },
 ];
 
 export default function EditorPage() {
-  const { setCanvasSize, setDpi, undo, redo, clearHistory } = useEditorStore();
-  const [selectedSize, setSelectedSize] = useState<CanvasSize>(CANVAS_SIZES[1]); // Default to medium
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const { canCheckout, missingSlots, layers } = useEditorStore();
+  const [selectedSize, setSelectedSize] = useState<CanvasSize>(CANVAS_SIZES[1]);
+
+  const checkout = canCheckout();
+  const missing = missingSlots();
+  const hasBlockedDpi = layers.some((l) => l.type === 'image' && (l as any).dpiStatus === 'blocked');
 
   const handleSizeChange = (size: CanvasSize) => {
     setSelectedSize(size);
-    setCanvasSize(size.width, size.height);
-    setDpi(size.dpi);
-    clearHistory();
+  };
+
+  const checkoutMessage = () => {
+    if (hasBlockedDpi) return 'Qualité insuffisante sur certaines photos';
+    if (missing.length > 0) return `Photos manquantes : ${missing.join(', ')}`;
+    return null;
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow">
-        <div className="max-w-full mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Canvas Designer</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Create your custom canvas print design
-          </p>
+        <div className="max-w-full mx-auto px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Éditeur Lawha</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Personnalisez votre impression</p>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-full mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Left Sidebar - Controls */}
+      <main className="flex-1 max-w-full mx-auto p-4 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+          {/* Left Sidebar */}
           <div className="lg:col-span-1 space-y-4">
             {/* Size Selector */}
             <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-lg font-bold mb-3">Select Size</h2>
-              <div className="space-y-2">
+              <h2 className="text-sm font-bold mb-3 text-gray-700">Format</h2>
+              <div className="space-y-1.5">
                 {CANVAS_SIZES.map((size) => (
                   <button
                     key={size.id}
                     onClick={() => handleSizeChange(size)}
-                    className={`w-full px-4 py-2 rounded text-left text-sm font-medium transition-colors ${
-                      selectedSize.id === size.id
+                    className={`w-full px-3 py-2 rounded text-left text-xs font-medium transition-colors ${selectedSize.id === size.id
                         ? 'bg-blue-500 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {size.name}
+                    <span className="block opacity-75">{size.widthCm}×{size.heightCm} cm</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Tools */}
-            <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-lg font-bold mb-3">Tools</h2>
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium"
-                >
-                  Upload Image
-                </button>
-                <button
-                  onClick={undo}
-                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium"
-                >
-                  ↶ Undo
-                </button>
-                <button
-                  onClick={redo}
-                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium"
-                >
-                  ↷ Redo
-                </button>
-              </div>
-            </div>
-
-            {/* Info */}
-            <div className="bg-blue-50 rounded-lg shadow p-4 text-sm">
-              <h3 className="font-bold mb-2">Canvas Info</h3>
-              <div className="space-y-1 text-gray-700">
-                <p>
-                  <span className="font-medium">Size:</span> {selectedSize.width}x
-                  {selectedSize.height}px
-                </p>
-                <p>
-                  <span className="font-medium">Resolution:</span> {selectedSize.dpi}
-                  {' '}DPI
-                </p>
-                <p className="text-xs text-gray-600 mt-2">
-                  {selectedSize.name}
-                </p>
-              </div>
+            {/* Photo Upload Panel */}
+            <div className="bg-white rounded-lg shadow p-4 flex-1">
+              <h2 className="text-sm font-bold mb-3 text-gray-700">Photos</h2>
+              <ImageUploadPanel
+                printWidthCm={selectedSize.widthCm}
+                printHeightCm={selectedSize.heightCm}
+              />
             </div>
           </div>
 
-          {/* Right Content - Canvas */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex justify-center overflow-auto max-h-[70vh]">
+          {/* Canvas */}
+          <div className="lg:col-span-3 flex flex-col gap-4">
+            <div className="bg-white rounded-lg shadow p-4 flex-1">
+              <div className="flex justify-center overflow-auto max-h-[65vh]">
                 <CanvasEditor
                   width={selectedSize.width}
                   height={selectedSize.height}
@@ -122,45 +98,42 @@ export default function EditorPage() {
                 />
               </div>
             </div>
+
+            {/* ── Checkout Bar ── */}
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  {checkout ? (
+                    <div className="flex items-center gap-2 text-green-700 text-sm">
+                      <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>Tout est prêt pour commander</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 text-gray-500 text-sm">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-400" />
+                      <span className="truncate">
+                        {checkoutMessage() ?? 'Complétez votre design pour commander'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  disabled={!checkout}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${checkout
+                      ? 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  onClick={() => checkout && alert('Redirection vers le panier…')}
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Commander →
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </main>
-
-      {/* Upload Modal (Placeholder) */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-lg font-bold mb-4">Upload Image</h2>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4">
-              <p className="text-gray-600">Drag and drop your image here</p>
-              <p className="text-sm text-gray-500 mt-2">or</p>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                id="file-input"
-              />
-              <label
-                htmlFor="file-input"
-                className="inline-block mt-2 px-4 py-2 bg-blue-500 text-white rounded cursor-pointer hover:bg-blue-600"
-              >
-                Choose File
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowUploadModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 font-medium"
-              >
-                Cancel
-              </button>
-              <button className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 font-medium">
-                Upload
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
