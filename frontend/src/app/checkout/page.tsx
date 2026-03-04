@@ -1,278 +1,193 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { ordersApi } from '@/api/orders-api';
-import { paymentsApi } from '@/api/payments-api';
-import { useAuthStore } from '@/store/authStore';
 import { useEditorStore } from '@/store/editorStore';
-import { StripePaymentForm } from '@/components/payments/StripePaymentForm';
+import { AlertCircle, Loader2, ShoppingCart, Package } from 'lucide-react';
 
-enum CheckoutStep {
-  SHIPPING = 'shipping',
-  PAYMENT = 'payment',
-  COMPLETE = 'complete',
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+const checkoutSchema = z.object({
+  shippingFirstName: z.string().min(1, 'Prénom requis'),
+  shippingLastName: z.string().min(1, 'Nom requis'),
+  shippingAddress: z.string().min(5, 'Adresse requise'),
+  shippingCity: z.string().min(1, 'Ville requise'),
+  shippingPostalCode: z.string().min(4, 'Code postal requis'),
+  shippingPhone: z.string().min(8, 'Téléphone : 8 chiffres minimum'),
+  guestEmail: z.string().email('Email invalide').optional().or(z.literal('')),
+});
+type CheckoutForm = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const { product, elements } = useEditorStore();
-  const [shippingAddress, setShippingAddress] = useState('');
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [step, setStep] = useState<CheckoutStep>(CheckoutStep.SHIPPING);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    canCheckout,
+    selectedTemplate,
+    selectedSize,
+    selectedFrame,
+    getDesignJson,
+    layers,
+  } = useEditorStore();
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-    }
-  }, [user, router]);
+    if (!canCheckout()) router.push('/editor');
+  }, []);
 
-  if (!product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            No product selected
-          </h1>
-          <Link
-            href="/gallery"
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          >
-            Back to Gallery
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CheckoutForm>({ resolver: zodResolver(checkoutSchema) });
 
-  // Calculate price
-  const basePrice = 25.99;
-  const sizeMod = 25;
-  const frameMod = 15;
-  const subtotal = basePrice + sizeMod + frameMod;
-  const tax = subtotal * 0.08;
-  const shipping = subtotal > 100 ? 0 : 9.99;
-  const total = subtotal + tax + shipping;
+  const sizePrice = parseFloat((selectedSize as any)?.price_delta || 0);
+  const framePrice = parseFloat((selectedFrame as any)?.price_delta || 0);
+  const total = (sizePrice + framePrice).toFixed(2);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
-  const handleShippingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
+  const onSubmit = async (data: CheckoutForm) => {
+    setSubmitError(null);
     try {
-      const orderData = {
-        items: [
-          {
-            product_id: product.productId,
-            quantity: 1,
-            size_selected: product.selectedSize,
-            frame_option: product.selectedFrame,
-          },
-        ],
-        shipping_address: shippingAddress,
+      const previewUrl = `preview_placeholder`;
+      const body = {
+        productSizeId: (selectedSize as any)?.id ?? 'unknown',
+        frameOptionId: (selectedFrame as any)?.id ?? undefined,
+        designJson: getDesignJson(),
+        previewUrl,
+        ...data,
       };
-
-      const order = await ordersApi.createOrder(orderData);
-      setOrderId(order.id);
-      setStep(CheckoutStep.PAYMENT);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') || '' : '';
+      const res = await fetch(`${API_BASE}/api/v1/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.message || 'Erreur lors de la commande');
+      }
+      const result = await res.json();
+      router.push(`/order/${result.orderId}/confirm`);
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || 'Failed to create order. Please try again.'
-      );
-      console.error('Order creation error:', err);
-    } finally {
-      setLoading(false);
+      setSubmitError(err.message || 'Une erreur est survenue');
     }
   };
 
-  const handlePaymentSuccess = async (paymentIntentId: string) => {
-    try {
-      await paymentsApi.confirmPayment(paymentIntentId, orderId!);
-      setStep(CheckoutStep.COMPLETE);
-    } catch (err: any) {
-      setError('Payment confirmed but failed to update order. Contact support.');
-      console.error('Payment confirmation error:', err);
-    }
-  };
-
-  const handlePaymentError = (errorMessage: string) => {
-    setError(errorMessage);
-  };
+  const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
+  const errorClass = 'text-xs text-red-600 mt-1';
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5" /> Finaliser la commande
+          </h1>
         </div>
       </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Récapitulatif */}
           <div className="lg:col-span-2">
-            {/* Shipping Step */}
-            {step === CheckoutStep.SHIPPING && (
-              <div className="bg-white rounded-lg shadow p-6 space-y-4">
-                <h2 className="text-lg font-bold">Shipping Address</h2>
-                <form onSubmit={handleShippingSubmit} className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="address"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Full Address
-                    </label>
-                    <textarea
-                      id="address"
-                      value={shippingAddress}
-                      onChange={(e) => setShippingAddress(e.target.value)}
-                      placeholder="Street address, city, state, ZIP"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows={4}
-                      required
-                    />
-                  </div>
-
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || !shippingAddress}
-                    className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-bold"
-                  >
-                    {loading ? 'Creating Order...' : 'Continue to Payment'}
-                  </button>
-                </form>
+            <div className="bg-white rounded-xl shadow p-5">
+              <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Package className="w-4 h-4" /> Récapitulatif
+              </h2>
+              <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                <span className="text-gray-400 text-sm">Aperçu du design</span>
               </div>
-            )}
-
-            {/* Payment Step */}
-            {step === CheckoutStep.PAYMENT && orderId && (
-              <div className="bg-white rounded-lg shadow p-6 space-y-4">
-                <h2 className="text-lg font-bold">Payment Method</h2>
-                <StripePaymentForm
-                  orderId={orderId}
-                  amount={Math.round(total * 100)}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                />
-                <button
-                  onClick={() => setStep(CheckoutStep.SHIPPING)}
-                  className="text-blue-500 hover:text-blue-600 text-sm font-medium"
-                >
-                  ← Back to Shipping
-                </button>
-              </div>
-            )}
-
-            {/* Success Step */}
-            {step === CheckoutStep.COMPLETE && (
-              <div className="bg-white rounded-lg shadow p-6 text-center space-y-6">
-                <div className="text-4xl">✅</div>
-                <h2 className="text-2xl font-bold text-green-600">
-                  Order Confirmed!
-                </h2>
-                <p className="text-gray-600">
-                  Thank you for your purchase. Your order has been placed successfully.
-                </p>
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <p className="text-sm text-gray-600">Order ID:</p>
-                  <p className="font-mono text-lg font-bold text-gray-900">{orderId}</p>
-                </div>
-                <p className="text-gray-600">
-                  You will receive an email confirmation shortly. You can track your order
-                  in your account dashboard.
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <Link
-                    href="/gallery"
-                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
-                  >
-                    Continue Shopping
-                  </Link>
-                  <Link
-                    href="/orders"
-                    className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
-                  >
-                    View Order
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Order Summary */}
-          <div>
-            <div className="bg-white rounded-lg shadow p-6 sticky top-4 space-y-4">
-              <h3 className="text-lg font-bold">Order Summary</h3>
-
-              {/* Product */}
-              <div className="space-y-3 pb-4 border-b">
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-700">{product.name}</span>
-                  <span className="font-medium">${basePrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Size ({product.selectedSize})</span>
-                  <span>+${sizeMod.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Frame ({product.selectedFrame})</span>
-                  <span>+${frameMod.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Pricing */}
-              <div className="space-y-3 pb-4 border-b">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  <span className="text-gray-500">Template</span>
+                  <span className="font-medium">{selectedTemplate?.name || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tax (8%)</span>
-                  <span className="font-medium">${tax.toFixed(2)}</span>
+                  <span className="text-gray-500">Taille</span>
+                  <span className="font-medium">{(selectedSize as any)?.label || '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
+                  <span className="text-gray-500">Cadre</span>
                   <span className="font-medium">
-                    {shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}
+                    {selectedFrame ? `${(selectedFrame as any).label} +${framePrice} TND` : 'Sans cadre'}
                   </span>
                 </div>
-                {shipping === 0 && (
-                  <p className="text-xs text-green-600">
-                    ✓ Free shipping on orders over $100
-                  </p>
-                )}
-              </div>
-
-              {/* Total */}
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-lg">Total</span>
-                <span className="text-2xl font-bold text-blue-600">
-                  ${total.toFixed(2)}
-                </span>
-              </div>
-
-              {/* Product Details */}
-              <div className="bg-gray-50 p-4 rounded-lg text-xs text-gray-700 space-y-1">
-                <p>
-                  <strong>Resolution:</strong> {product.dpi} DPI
-                </p>
-                <p>
-                  <strong>Design Elements:</strong> {elements.length}
-                </p>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Photos</span>
+                  <span className="font-medium">{layers.filter((l) => l.type === 'image').length} photo(s)</span>
+                </div>
+                <hr />
+                <div className="flex justify-between font-bold text-base">
+                  <span>Total</span>
+                  <span className="text-green-700">{total} TND</span>
+                </div>
               </div>
             </div>
+          </div>
+          {/* Formulaire */}
+          <div className="lg:col-span-3">
+            <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl shadow p-6 space-y-4">
+              <h2 className="font-bold text-gray-800 mb-2">Adresse de livraison</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Prénom *</label>
+                  <input {...register('shippingFirstName')} className={inputClass} placeholder="Ahmed" />
+                  {errors.shippingFirstName && <p className={errorClass}>{errors.shippingFirstName.message}</p>}
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Nom *</label>
+                  <input {...register('shippingLastName')} className={inputClass} placeholder="Ben Ali" />
+                  {errors.shippingLastName && <p className={errorClass}>{errors.shippingLastName.message}</p>}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Adresse *</label>
+                <input {...register('shippingAddress')} className={inputClass} placeholder="12 Rue Habib Bourguiba" />
+                {errors.shippingAddress && <p className={errorClass}>{errors.shippingAddress.message}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Ville *</label>
+                  <input {...register('shippingCity')} className={inputClass} placeholder="Sfax" />
+                  {errors.shippingCity && <p className={errorClass}>{errors.shippingCity.message}</p>}
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Code postal *</label>
+                  <input {...register('shippingPostalCode')} className={inputClass} placeholder="3000" />
+                  {errors.shippingPostalCode && <p className={errorClass}>{errors.shippingPostalCode.message}</p>}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Téléphone *</label>
+                <input {...register('shippingPhone')} className={inputClass} placeholder="21234567" />
+                {errors.shippingPhone && <p className={errorClass}>{errors.shippingPhone.message}</p>}
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Email (si non connecté)</label>
+                <input {...register('guestEmail')} className={inputClass} type="email" placeholder="votre@email.com" />
+                {errors.guestEmail && <p className={errorClass}>{errors.guestEmail.message}</p>}
+              </div>
+              {submitError && (
+                <div className="flex items-center gap-2 text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" /> {submitError}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold rounded-xl transition-colors"
+              >
+                {isSubmitting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Traitement…</>
+                ) : (
+                  <><ShoppingCart className="w-4 h-4" /> Commander — {total} TND</>
+                )}
+              </button>
+            </form>
           </div>
         </div>
       </main>
