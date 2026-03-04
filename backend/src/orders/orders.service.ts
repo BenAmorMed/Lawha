@@ -1,18 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Order, OrderStatus } from './order.entity';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { Order } from './order.entity';
 import { OrderItem } from './order-item.entity';
+import { PrintJob } from './print-job.entity';
 import { Product } from '../products/product.entity';
-import { User } from '../auth/entities/user.entity';
-import { EmailService } from '../email/email.service';
-import {
-  CreateOrderDto,
-  OrderResponseDto,
-  OrderListDto,
-  UpdateOrderStatusDto,
-  OrderPriceBreakdownDto,
-} from './orders.dto';
+import { ProductSize } from '../products/entities/product-size.entity';
+import { FrameOption } from '../products/entities/frame-option.entity';
+import { CreateOrderDto, OrderCreatedResponseDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -21,238 +16,117 @@ export class OrdersService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemRepository: Repository<OrderItem>,
+    @InjectRepository(PrintJob)
+    private readonly printJobRepository: Repository<PrintJob>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    private readonly emailService: EmailService,
-  ) {}
+    @InjectRepository(ProductSize)
+    private readonly productSizeRepository: Repository<ProductSize>,
+    @InjectRepository(FrameOption)
+    private readonly frameOptionRepository: Repository<FrameOption>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+  ) { }
 
-  async createOrder(
-    userId: string,
-    createOrderDto: CreateOrderDto,
-  ): Promise<OrderResponseDto> {
-    // Validate and fetch products
-    const products = await Promise.all(
-      createOrderDto.items.map((item) =>
-        this.productRepository.findOne({ where: { id: item.product_id } }),
-      ),
-    );
+  async createOrder(dto: CreateOrderDto, userId?: string): Promise<OrderCreatedResponseDto> {
+    // ── ÉTAPE 1 ── Recalcul du prix côté backend
+    const size = await this.productSizeRepository.findOne({ where: { id: dto.productSizeId } });
+    if (!size) throw new BadRequestException(`ProductSize not found: ${dto.productSizeId}`);
 
-    if (products.some((p) => !p)) {
-      throw new Error('One or more products not found');
+    const product = await this.productRepository.findOne({ where: { id: size.product_id } });
+    if (!product) throw new BadRequestException(`Product not found for size: ${dto.productSizeId}`);
+
+    let total = parseFloat(product.base_price.toString()) + parseFloat(size.price_delta.toString());
+
+    let frameOption: FrameOption | null = null;
+    if (dto.frameOptionId) {
+      frameOption = await this.frameOptionRepository.findOne({ where: { id: dto.frameOptionId } });
+      if (!frameOption) throw new BadRequestException(`FrameOption not found: ${dto.frameOptionId}`);
+      total += parseFloat(frameOption.price_delta.toString());
+    }
+    total = Math.round(total * 100) / 100;
+
+    // ── ÉTAPE 2 ── Validation du designJson
+    const design = dto.designJson as any;
+    if (!design?.templateId || !Array.isArray(design?.layers)) {
+      throw new BadRequestException('designJson must contain templateId and layers[]');
     }
 
-    // Calculate total
-    let totalAmount = 0;
-    const orderItems: OrderItem[] = [];
+    // ── ÉTAPE 3 ── Transaction atomique
+    const savedOrder = await this.dataSource.transaction(async (manager) => {
+      // Créer la commande
+      const order = manager.create(Order, {
+        user_id: userId || null,
+        guest_email: dto.guestEmail || null,
+        status: 'pending_payment' as any,
+        total_amount: total,
+        shipping_address: JSON.stringify({
+          firstName: dto.shippingFirstName,
+          lastName: dto.shippingLastName,
+          address: dto.shippingAddress,
+          city: dto.shippingCity,
+          postalCode: dto.shippingPostalCode,
+          phone: dto.shippingPhone,
+        }),
+      });
+      const savedOrder = await manager.save(Order, order);
 
-    for (let i = 0; i < createOrderDto.items.length; i++) {
-      const item = createOrderDto.items[i];
-      const product = products[i];
+      // Créer l'OrderItem avec design_json
+      const item = manager.create(OrderItem, {
+        order_id: savedOrder.id,
+        product_id: product.id,
+        product_size_id: size.id,
+        frame_option_id: dto.frameOptionId || null,
+        template_id: design.templateId,
+        design_json: JSON.stringify(dto.designJson),
+        preview_url: dto.previewUrl,
+        unit_price: total,
+        quantity: 1,
+        subtotal: total,
+      });
+      const savedItem = await manager.save(OrderItem, item);
 
-      const unitPrice = parseFloat(product.base_price.toString());
-      const subtotal = unitPrice * item.quantity;
-      totalAmount += subtotal;
+      // Créer le PrintJob
+      const job = manager.create(PrintJob, {
+        order_item_id: savedItem.id,
+        status: 'queued',
+        attempts: 0,
+      });
+      await manager.save(PrintJob, job);
 
-      const orderItem = new OrderItem();
-      orderItem.product_id = product.id;
-      orderItem.quantity = item.quantity;
-      orderItem.unit_price = unitPrice;
-      orderItem.size_selected = item.size_selected || '';
-      orderItem.frame_option = item.frame_option || '';
-      orderItem.subtotal = subtotal;
-
-      orderItems.push(orderItem);
-    }
-
-    // Create order
-    const order = this.orderRepository.create({
-      user_id: userId,
-      status: OrderStatus.PENDING,
-      total_amount: totalAmount,
-      shipping_address: createOrderDto.shipping_address,
+      return savedOrder;
     });
 
-    const savedOrder = await this.orderRepository.save(order);
-
-    // Save order items
-    for (const item of orderItems) {
-      item.order_id = savedOrder.id;
-    }
-    await this.orderItemRepository.save(orderItems);
-
-    // Send order confirmation email
-    try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-      });
-      if (user && user.email) {
-        await this.emailService.sendOrderConfirmation(savedOrder, user.email);
-      }
-    } catch (error) {
-      console.error('Failed to send order confirmation email:', error);
-      // Don't fail order creation if email fails
-    }
-
-    return this.formatOrderResponse(savedOrder, orderItems);
+    // ── ÉTAPE 4 ── Retour
+    return {
+      orderId: savedOrder.id,
+      total,
+      status: 'pending_payment',
+    };
   }
 
-  async getUserOrders(userId: string): Promise<OrderListDto[]> {
-    const orders = await this.orderRepository.find({
+  async getOrderById(orderId: string, userId?: string): Promise<any> {
+    const where: any = { id: orderId };
+    if (userId) where.user_id = userId;
+
+    const order = await this.orderRepository.findOne({ where });
+    if (!order) throw new BadRequestException('Order not found');
+
+    const items = await this.orderItemRepository.find({ where: { order_id: orderId } });
+    return { order, items };
+  }
+
+  async getUserOrders(userId: string): Promise<any[]> {
+    return this.orderRepository.find({
       where: { user_id: userId },
       order: { created_at: 'DESC' },
     });
-
-    // Get item counts
-    const itemCounts = await Promise.all(
-      orders.map((order) =>
-        this.orderItemRepository.count({ where: { order_id: order.id } }),
-      ),
-    );
-
-    return orders.map((order, idx) => ({
-      id: order.id,
-      status: order.status,
-      total_amount: parseFloat(order.total_amount.toString()),
-      items_count: itemCounts[idx],
-      created_at: order.created_at,
-      shipped_at: order.shipped_at,
-    }));
-  }
-
-  async getOrderById(orderId: string, userId: string): Promise<OrderResponseDto> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId, user_id: userId },
-    });
-
-    if (!order) {
-      throw new Error('Order not found');
-    }
-
-    const items = await this.orderItemRepository.find({
-      where: { order_id: orderId },
-    });
-
-    return this.formatOrderResponse(order, items);
-  }
-
-  async updateOrderStatus(
-    orderId: string,
-    updateDto: UpdateOrderStatusDto,
-  ): Promise<OrderResponseDto> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-    });
-
-    if (!order) {
-      throw new Error('Order not found');
-    }
-
-    order.status = updateDto.status as OrderStatus;
-
-    if (updateDto.tracking_number) {
-      order.tracking_number = updateDto.tracking_number;
-    }
-
-    if (updateDto.status === OrderStatus.SHIPPED) {
-      order.shipped_at = new Date();
-    }
-
-    if (updateDto.status === OrderStatus.DELIVERED) {
-      order.delivered_at = new Date();
-    }
-
-    await this.orderRepository.save(order);
-
-    const items = await this.orderItemRepository.find({
-      where: { order_id: orderId },
-    });
-
-    return this.formatOrderResponse(order, items);
   }
 
   async cancelOrder(orderId: string, userId: string): Promise<void> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId, user_id: userId },
-    });
-
-    if (!order) {
-      throw new Error('Order not found');
-    }
-
-    if (order.status === OrderStatus.PRINTING || order.status === OrderStatus.SHIPPED) {
-      throw new Error('Cannot cancel order that is already printing or shipped');
-    }
-
-    order.status = OrderStatus.CANCELLED;
+    const order = await this.orderRepository.findOne({ where: { id: orderId, user_id: userId } });
+    if (!order) throw new BadRequestException('Order not found');
+    order.status = 'cancelled' as any;
     await this.orderRepository.save(order);
-  }
-
-  async getOrderPriceBreakdown(orderId: string): Promise<OrderPriceBreakdownDto> {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-    });
-
-    if (!order) {
-      throw new Error('Order not found');
-    }
-
-    const items = await this.orderItemRepository.find({
-      where: { order_id: orderId },
-    });
-
-    // Fetch product details for item names
-    const itemsWithNames = await Promise.all(
-      items.map(async (item) => {
-        const product = await this.productRepository.findOne({
-          where: { id: item.product_id },
-        });
-        return {
-          product_name: product?.name || 'Unknown Product',
-          quantity: item.quantity,
-          unit_price: parseFloat(item.unit_price.toString()),
-          subtotal: parseFloat(item.subtotal.toString()),
-        };
-      }),
-    );
-
-    const subtotal = parseFloat(order.total_amount.toString());
-    const tax = Math.round(subtotal * 0.08 * 100) / 100; // 8% tax
-    const shipping = subtotal > 100 ? 0 : 10; // Free shipping over $100
-
-    return {
-      subtotal,
-      tax,
-      shipping,
-      total: subtotal + tax + shipping,
-      items: itemsWithNames,
-    };
-  }
-
-  private formatOrderResponse(
-    order: Order,
-    items: OrderItem[],
-  ): OrderResponseDto {
-    return {
-      id: order.id,
-      user_id: order.user_id,
-      status: order.status,
-      total_amount: parseFloat(order.total_amount.toString()),
-      shipping_address: order.shipping_address,
-      tracking_number: order.tracking_number,
-      items: items.map((item) => ({
-        id: item.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.unit_price.toString()),
-        size_selected: item.size_selected,
-        frame_option: item.frame_option,
-        subtotal: parseFloat(item.subtotal.toString()),
-        created_at: item.created_at,
-      })),
-      created_at: order.created_at,
-      updated_at: order.updated_at,
-    };
   }
 }

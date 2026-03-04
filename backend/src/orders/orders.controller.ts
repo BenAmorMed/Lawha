@@ -2,78 +2,56 @@ import {
   Controller,
   Post,
   Get,
-  Patch,
   Delete,
   Param,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
+  Optional,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { User } from '../auth/entities/user.entity';
+import { AuthGuard } from '@nestjs/passport';
 import { OrdersService } from './orders.service';
-import {
-  CreateOrderDto,
-  OrderResponseDto,
-  OrderListDto,
-  UpdateOrderStatusDto,
-  OrderPriceBreakdownDto,
-} from './orders.dto';
+import { CreateOrderDto, OrderCreatedResponseDto } from './dto/create-order.dto';
 
+/**
+ * POST /api/v1/orders — Route publique (guest) OU protégée (JWT optionnel).
+ * On tente d'extraire l'userId depuis le JWT si présent, sinon on passe undefined.
+ */
 @Controller('api/v1/orders')
-@UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createOrder(
-    @CurrentUser() user: User,
-    @Body() createOrderDto: CreateOrderDto,
-  ): Promise<OrderResponseDto> {
-    return this.ordersService.createOrder(user.id, createOrderDto);
+    @Body() dto: CreateOrderDto,
+    @Request() req: any,
+  ): Promise<OrderCreatedResponseDto> {
+    // Extract userId from JWT if present in Authorization header
+    const userId = req.user?.id || req.user?.sub || undefined;
+    return this.ordersService.createOrder(dto, userId);
   }
 
-  @Get()
+  @Get('my')
+  @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.OK)
-  async getMyOrders(@CurrentUser() user: User): Promise<OrderListDto[]> {
-    return this.ordersService.getUserOrders(user.id);
+  async getMyOrders(@Request() req: any): Promise<any[]> {
+    return this.ordersService.getUserOrders(req.user.id);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getOrder(
-    @Param('id') orderId: string,
-    @CurrentUser() user: User,
-  ): Promise<OrderResponseDto> {
-    return this.ordersService.getOrderById(orderId, user.id);
-  }
-
-  @Get(':id/breakdown')
-  @HttpCode(HttpStatus.OK)
-  async getOrderBreakdown(
-    @Param('id') orderId: string,
-  ): Promise<OrderPriceBreakdownDto> {
-    return this.ordersService.getOrderPriceBreakdown(orderId);
-  }
-
-  @Patch(':id/status')
-  @HttpCode(HttpStatus.OK)
-  async updateOrderStatus(
-    @Param('id') orderId: string,
-    @Body() updateDto: UpdateOrderStatusDto,
-  ): Promise<OrderResponseDto> {
-    return this.ordersService.updateOrderStatus(orderId, updateDto);
+  async getOrder(@Param('id') orderId: string, @Request() req: any): Promise<any> {
+    const userId = req.user?.id || undefined;
+    return this.ordersService.getOrderById(orderId, userId);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.NO_CONTENT)
-  async cancelOrder(
-    @Param('id') orderId: string,
-    @CurrentUser() user: User,
-  ): Promise<void> {
-    return this.ordersService.cancelOrder(orderId, user.id);
+  async cancelOrder(@Param('id') orderId: string, @Request() req: any): Promise<void> {
+    return this.ordersService.cancelOrder(orderId, req.user.id);
   }
 }
