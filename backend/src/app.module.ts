@@ -34,7 +34,7 @@ import { ReviewsModule } from './reviews/reviews.module';
         database: configService.get('DB_NAME', 'canvas_platform'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         ssl: { rejectUnauthorized: false },
-        synchronize: false,
+        synchronize: true,
         logging: false,
       }),
     }),
