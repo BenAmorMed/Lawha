@@ -1,266 +1,261 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import Konva from 'konva';
-import { Stage, Layer, Image, Text, Transformer, Rect, Group } from 'react-konva';
-import { useEditorStore } from '@/store/editorStore';
+import { Stage, Layer, Image as KonvaImage, Text as KonvaText, Transformer, Rect, Group } from 'react-konva';
+import useImage from 'use-image';
+import { useEditorStore, ImageLayer, TextLayer, Layer as EditorLayer } from '@/store/editorStore';
 
-interface CanvasElement {
-  id: string;
-  type: 'image' | 'text';
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  text?: string;
-  scaleX?: number;
-  scaleY?: number;
-  rotation?: number;
-  fill?: string;
-  fontSize?: number;
-}
-
-export const CanvasEditor: React.FC<{
+export interface CanvasEditorProps {
   width: number;
   height: number;
+  widthCm?: number;
+  heightCm?: number;
   dpi?: number;
-}> = ({ width, height, dpi = 300 }) => {
-  const stageRef = useRef<Konva.Stage>(null);
-  const [elements, setElements] = useState<CanvasElement[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const transformerRef = useRef<Konva.Transformer>(null);
-  const { setCanvasState } = useEditorStore();
+}
 
-  // Handle canvas click to select elements
-  const handleCanvasClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    // Check if user clicked an element
-    if (e.target === e.target.getStage()) {
-      setSelectedId(null);
-      if (transformerRef.current) {
-        transformerRef.current.nodes([]);
-      }
+export interface CanvasEditorRef {
+  getPreviewDataUrl: () => string | null;
+}
+
+// Image component for Konva
+const ImageElement: React.FC<{
+  layer: ImageLayer;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<ImageLayer>) => void;
+}> = ({ layer, isSelected, onSelect, onUpdate }) => {
+  const [image, status] = useImage(layer.src, 'anonymous');
+
+  useEffect(() => {
+    if (status === 'failed') {
+      console.error(`Failed to load image: ${layer.src}`);
     }
-  };
-
-  // Select element and show transformer
-  const handleElementSelect = (id: string) => {
-    setSelectedId(id);
-    const stage = stageRef.current;
-    if (stage && transformerRef.current) {
-      const selectedNode = stage.findOne(`#${id}`) as Konva.Node;
-      if (selectedNode) {
-        transformerRef.current.nodes([selectedNode]);
-      }
-    }
-  };
-
-  // Add image to canvas
-  const addImage = (imageUrl: string, imageId: string) => {
-    const img = new window.Image();
-    img.onload = () => {
-      const newElement: CanvasElement = {
-        id: `image-${imageId}`,
-        type: 'image',
-        x: 50,
-        y: 50,
-        width: Math.min(img.width / 2, width - 100),
-        height: Math.min(img.height / 2, height - 100),
-        scaleX: 1,
-        scaleY: 1,
-      };
-      setElements([...elements, newElement]);
-      setCanvasState({ elements: [...elements, newElement] });
-    };
-    img.src = imageUrl;
-  };
-
-  // Add text to canvas
-  const addText = (text: string = 'Click to edit') => {
-    const newElement: CanvasElement = {
-      id: `text-${Date.now()}`,
-      type: 'text',
-      x: 50,
-      y: 50,
-      text,
-      fontSize: 24,
-      fill: '#000000',
-    };
-    setElements([...elements, newElement]);
-    setCanvasState({ elements: [...elements, newElement] });
-  };
-
-  // Update element
-  const updateElement = (id: string, updates: Partial<CanvasElement>) => {
-    const updated = elements.map((el) =>
-      el.id === id ? { ...el, ...updates } : el
-    );
-    setElements(updated);
-    setCanvasState({ elements: updated });
-  };
-
-  // Delete element
-  const deleteElement = (id: string) => {
-    const filtered = elements.filter((el) => el.id !== id);
-    setElements(filtered);
-    setCanvasState({ elements: filtered });
-    setSelectedId(null);
-  };
-
-  // Export canvas as PNG
-  const exportAsImage = (filename: string = 'canvas.png') => {
-    if (stageRef.current) {
-      const dataURL = stageRef.current.toDataURL();
-      const link = document.createElement('a');
-      link.href = dataURL;
-      link.download = filename;
-      link.click();
-    }
-  };
-
-  // Export canvas as PDF
-  const exportAsPDF = async (filename: string = 'canvas.pdf') => {
-    // This will be implemented with jsPDF library
-    console.log(`Export as PDF: ${filename}`);
-  };
+  }, [status, layer.src]);
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Canvas */}
-      <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white">
-        <Stage
-          ref={stageRef}
-          width={width}
-          height={height}
-          onClick={handleCanvasClick}
-          className="cursor-crosshair"
-        >
-          <Layer>
-            {/* Canvas background */}
-            <Rect
-              width={width}
-              height={height}
-              fill="white"
-              listening={true}
-            />
-
-            {/* Render elements */}
-            {elements.map((element) => (
-              <Group
-                key={element.id}
-                id={element.id}
-                draggable
-                onClick={() => handleElementSelect(element.id)}
-                onDragEnd={(e) => {
-                  updateElement(element.id, {
-                    x: e.target.x(),
-                    y: e.target.y(),
-                  });
-                }}
-              >
-                {element.type === 'image' && (
-                  <KonvaImage
-                    src={element.id}
-                    x={0}
-                    y={0}
-                    width={element.width}
-                    height={element.height}
-                    scaleX={element.scaleX}
-                    scaleY={element.scaleY}
-                  />
-                )}
-                {element.type === 'text' && (
-                  <Text
-                    text={element.text}
-                    fontSize={element.fontSize}
-                    fill={element.fill}
-                    fontFamily="Arial"
-                    align="left"
-                  />
-                )}
-              </Group>
-            ))}
-
-            {/* Transformer for selected element */}
-            {selectedId && (
-              <Transformer ref={transformerRef} />
-            )}
-          </Layer>
-        </Stage>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => addText()}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Add Text
-        </button>
-        <button
-          onClick={() => deleteElement(selectedId || '')}
-          disabled={!selectedId}
-          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-        >
-          Delete
-        </button>
-        <button
-          onClick={() => exportAsImage()}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Export PNG
-        </button>
-        <button
-          onClick={() => exportAsPDF()}
-          className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-        >
-          Export PDF
-        </button>
-      </div>
-
-      {/* Element properties panel */}
-      {selectedId && (
-        <div className="bg-gray-100 p-4 rounded-lg">
-          <h3 className="font-bold mb-3">Element Properties</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {/* Properties will be shown here */}
-            <p className="text-sm text-gray-600">Selected: {selectedId}</p>
-          </div>
-        </div>
+    <Group
+      id={layer.id}
+      x={layer.x}
+      y={layer.y}
+      scaleX={layer.scale}
+      scaleY={layer.scale}
+      rotation={layer.rotation}
+      draggable
+      onClick={() => onSelect(layer.id)}
+      onTap={() => onSelect(layer.id)}
+      onDragEnd={(e) => {
+        onUpdate(layer.id, {
+          x: e.target.x(),
+          y: e.target.y(),
+        });
+      }}
+      onTransformEnd={(e) => {
+        const node = e.target;
+        onUpdate(layer.id, {
+          x: node.x(),
+          y: node.y(),
+          scale: node.scaleX(),
+          rotation: node.rotation(),
+        });
+      }}
+    >
+      {image && (
+        <KonvaImage
+          image={image}
+          width={layer.widthPx}
+          height={layer.heightPx}
+        />
       )}
-    </div>
+      {status === 'loading' && (
+        <Rect width={100} height={100} fill="#eee" opacity={0.5} />
+      )}
+    </Group>
   );
 };
 
-// Konva Image component wrapper
-const KonvaImage: React.FC<{
-  src: string;
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  scaleX?: number;
-  scaleY?: number;
-}> = ({ src, x, y, width, height, scaleX = 1, scaleY = 1 }) => {
-  const imageRef = useRef<Konva.Image>(null);
-  const [image, setImage] = useState<HTMLImageElement | null>(null);
+// Text component for Konva
+const TextElement: React.FC<{
+  layer: TextLayer;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<TextLayer>) => void;
+}> = ({ layer, isSelected, onSelect, onUpdate }) => {
+  return (
+    <Group
+      id={layer.id}
+      x={layer.x}
+      y={layer.y}
+      draggable
+      onClick={() => onSelect(layer.id)}
+      onTap={() => onSelect(layer.id)}
+      onDragEnd={(e) => {
+        onUpdate(layer.id, {
+          x: e.target.x(),
+          y: e.target.y(),
+        });
+      }}
+    >
+      <KonvaText
+        text={layer.content}
+        fontSize={layer.size}
+        fill={layer.color}
+        fontFamily={layer.font}
+        fontStyle={layer.bold ? (layer.italic ? 'bold italic' : 'bold') : (layer.italic ? 'italic' : 'normal')}
+        align={layer.align}
+      />
+    </Group>
+  );
+};
+
+export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((props, ref) => {
+  const {
+    width,
+    height,
+    widthCm,
+    heightCm,
+    dpi = 300,
+  } = props;
+  const stageRef = useRef<Konva.Stage>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const transformerRef = useRef<Konva.Transformer>(null);
+  const [displayScale, setDisplayScale] = React.useState(1);
+
+  const {
+    layers,
+    selectedLayerId,
+    setSelectedLayer,
+    updateImageLayer,
+    updateTextLayer,
+    addImageLayer,
+    uploadedImages
+  } = useEditorStore();
+
+  // Re-calculate scale to fit container
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const containerW = containerRef.current.offsetWidth;
+        // Padding/margin adjustment
+        const targetW = containerW - 40;
+        const newScale = targetW / width;
+        setDisplayScale(newScale);
+      }
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [width]);
+
+  useImperativeHandle(ref, () => ({
+    getPreviewDataUrl: () => {
+      const stage = stageRef.current;
+      if (!stage) return null;
+      return stage.toDataURL({ pixelRatio: 0.3 });
+    }
+  }));
+
+  const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (e.target === e.target.getStage()) {
+      setSelectedLayer(null);
+      return;
+    }
+  };
 
   useEffect(() => {
-    const img = new window.Image();
-    img.onload = () => setImage(img);
-    // Extract actual image URL from src ID
-    img.src = src;
-  }, [src]);
+    if (transformerRef.current && stageRef.current) {
+      if (selectedLayerId) {
+        const selectedNode = stageRef.current.findOne(`#${selectedLayerId}`);
+        if (selectedNode) {
+          transformerRef.current.nodes([selectedNode]);
+        } else {
+          transformerRef.current.nodes([]);
+        }
+      } else {
+        transformerRef.current.nodes([]);
+      }
+      transformerRef.current.getLayer()?.batchDraw();
+    }
+  }, [selectedLayerId, layers]);
 
-  return image ? (
-    <Image
-      ref={imageRef}
-      image={image}
-      x={x}
-      y={y}
-      width={width}
-      height={height}
-      scaleX={scaleX}
-      scaleY={scaleY}
-    />
-  ) : null;
-};
+  return (
+    <div ref={containerRef} className="w-full flex items-center justify-center p-4">
+      <div
+        className="bg-white shadow-xl relative"
+        style={{
+          width: width * displayScale,
+          height: height * displayScale,
+        }}
+      >
+        <Stage
+          ref={stageRef}
+          width={width * displayScale}
+          height={height * displayScale}
+          scaleX={displayScale}
+          scaleY={displayScale}
+          onClick={handleStageClick}
+          onTap={handleStageClick}
+          onDragOver={(e: Konva.KonvaEventObject<DragEvent>) => {
+            e.evt.preventDefault();
+          }}
+          onDrop={(e: Konva.KonvaEventObject<DragEvent>) => {
+            e.evt.preventDefault();
+            const imageId = e.evt.dataTransfer?.getData('imageId');
+            if (!imageId) return;
+
+            const image = uploadedImages.find(img => img.id === imageId);
+            if (!image) return;
+
+            const stage = stageRef.current;
+            if (stage) {
+              stage.setPointersPositions(e.evt);
+              const pos = stage.getPointerPosition();
+              if (pos) {
+                // Adjust position by current stage scale
+                addImageLayer(image, pos.x / displayScale, pos.y / displayScale);
+              }
+            }
+          }}
+        >
+          <Layer>
+            <Rect width={width} height={height} fill="white" />
+            {layers.map((layer) => {
+              if (layer.type === 'image') {
+                return (
+                  <ImageElement
+                    key={layer.id}
+                    layer={layer}
+                    isSelected={layer.id === selectedLayerId}
+                    onSelect={setSelectedLayer}
+                    onUpdate={updateImageLayer}
+                  />
+                );
+              } else if (layer.type === 'text') {
+                return (
+                  <TextElement
+                    key={layer.id}
+                    layer={layer}
+                    isSelected={layer.id === selectedLayerId}
+                    onSelect={setSelectedLayer}
+                    onUpdate={updateTextLayer}
+                  />
+                );
+              }
+              return null;
+            })}
+            <Transformer
+              ref={transformerRef}
+              boundBoxFunc={(oldBox, newBox) => {
+                if (newBox.width < 5 || newBox.height < 5) return oldBox;
+                return newBox;
+              }}
+            />
+          </Layer>
+        </Stage>
+      </div>
+    </div>
+  );
+});
+
+CanvasEditor.displayName = 'CanvasEditor';

@@ -8,6 +8,7 @@ import { Product } from '../products/product.entity';
 import { ProductSize } from '../products/entities/product-size.entity';
 import { FrameOption } from '../products/entities/frame-option.entity';
 import { CreateOrderDto, OrderCreatedResponseDto } from './dto/create-order.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OrdersService {
@@ -26,6 +27,7 @@ export class OrdersService {
     private readonly frameOptionRepository: Repository<FrameOption>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly emailService: EmailService,
   ) { }
 
   async createOrder(dto: CreateOrderDto, userId?: string): Promise<OrderCreatedResponseDto> {
@@ -99,7 +101,13 @@ export class OrdersService {
       return savedOrder;
     });
 
-    // ── ÉTAPE 4 ── Retour
+    // ── ÉTAPE 4 ── Send order confirmation email (non-blocking)
+    const recipientEmail = dto.guestEmail || null;
+    if (recipientEmail) {
+      this.emailService.sendOrderConfirmation(savedOrder, recipientEmail).catch(() => { });
+    }
+
+    // ── ÉTAPE 5 ── Retour
     return {
       orderId: savedOrder.id,
       total,

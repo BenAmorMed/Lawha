@@ -12,9 +12,9 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { User } from '../auth/entities/user.entity';
+import { JwtAuthGuard } from './../auth/jwt-auth.guard';
+import { CurrentUser } from './../auth/current-user.decorator';
+import { User } from './../auth/entities/user.entity';
 import { ImagesService, IFile } from './images.service';
 import { ImageListDto, ImageMetadataDto } from './images.dto';
 
@@ -23,18 +23,24 @@ export class ImagesController {
   constructor(private readonly imagesService: ImagesService) { }
 
   @Post('upload')
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.CREATED)
   async uploadImage(
     @UploadedFile() file: IFile,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User | null,
     @Body('printWidthCm') printWidthCm?: string,
     @Body('printHeightCm') printHeightCm?: string,
   ): Promise<any> {
     const widthCm = printWidthCm ? parseFloat(printWidthCm) : 30;
     const heightCm = printHeightCm ? parseFloat(printHeightCm) : 40;
-    return this.imagesService.uploadImage(file, user.id, widthCm, heightCm, 300);
+
+    const result = await this.imagesService.uploadImage(
+      file,
+      user?.id,
+      parseFloat(printWidthCm || '30'),
+      parseFloat(printHeightCm || '40'),
+    );
+    return result;
   }
 
   @Post('upload-preview')

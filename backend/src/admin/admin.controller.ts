@@ -100,4 +100,25 @@ export class AdminController {
   async getAnalytics() {
     return this.adminService.getOrderAnalytics();
   }
+
+  /**
+   * Approve an order for printing
+   * Changes status from any → 'printing'
+   */
+  @Post(':id/approve')
+  async approveOrder(@Param('id') orderId: string) {
+    return this.adminService.approveOrder(orderId);
+  }
+
+  /**
+   * Reject an order
+   * Changes status → 'cancelled'
+   */
+  @Post(':id/reject')
+  async rejectOrder(
+    @Param('id') orderId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.adminService.rejectOrder(orderId, body.reason);
+  }
 }

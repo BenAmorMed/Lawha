@@ -2,14 +2,14 @@ import { apiClient } from './api-client';
 
 export interface AdminOrder {
   id: string;
-  user_email: string;
-  user_id: string;
+  userEmail: string;
+  userId: string;
   status: string;
-  total_amount: number;
-  items_count: number;
-  created_at: string;
-  updated_at: string;
-  tracking_number?: string;
+  total: number;
+  itemsCount: number;
+  createdAt: string;
+  updatedAt: string;
+  trackingNumber?: string;
 }
 
 export interface AdminOrderDetail extends AdminOrder {
@@ -47,7 +47,7 @@ export const adminApi = {
     status?: string;
     limit?: number;
     offset?: number;
-    sortBy?: 'created_at' | 'total_amount' | 'status';
+    sortBy?: 'createdAt' | 'total' | 'status';
     sortOrder?: 'ASC' | 'DESC';
   }): Promise<{
     data: AdminOrder[];
@@ -107,5 +107,15 @@ export const adminApi = {
   getAnalytics: async (): Promise<AdminAnalytics> => {
     const response = await apiClient.get(`/admin/orders/analytics/dashboard`);
     return response.data;
+  },
+
+  // Approve an order for printing
+  approveOrder: async (orderId: string): Promise<void> => {
+    await apiClient.post(`/admin/orders/${orderId}/approve`);
+  },
+
+  // Reject an order
+  rejectOrder: async (orderId: string, reason?: string): Promise<void> => {
+    await apiClient.post(`/admin/orders/${orderId}/reject`, { reason });
   },
 };

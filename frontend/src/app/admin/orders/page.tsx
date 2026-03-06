@@ -8,12 +8,13 @@ import { adminApi } from '@/api/admin-api';
 
 interface Order {
   id: string;
-  user_email: string;
+  userEmail: string;
+  userId: string;
   status: string;
-  total_amount: number;
-  items_count: number;
-  created_at: string;
-  tracking_number?: string;
+  total: number;
+  itemsCount: number;
+  createdAt: string;
+  trackingNumber?: string;
 }
 
 const statusColors = {
@@ -33,7 +34,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'created_at' | 'total_amount'>('created_at');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'total' | 'status'>('createdAt');
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>('');
   const [pagination, setPagination] = useState({ total: 0, pages: 1, offset: 0 });
@@ -114,6 +115,26 @@ export default function AdminOrdersPage() {
       alert(err.response?.data?.message || 'Failed to update orders');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleApprove = async (orderId: string) => {
+    if (!confirm('Approuver cette commande pour impression ?')) return;
+    try {
+      await adminApi.approveOrder(orderId);
+      fetchOrders();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erreur lors de l\'approbation');
+    }
+  };
+
+  const handleReject = async (orderId: string) => {
+    const reason = prompt('Raison du rejet (optionnel) :') ?? undefined;
+    try {
+      await adminApi.rejectOrder(orderId, reason);
+      fetchOrders();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erreur lors du rejet');
     }
   };
 
@@ -217,13 +238,14 @@ export default function AdminOrdersPage() {
               <select
                 value={sortBy}
                 onChange={(e) => {
-                  setSortBy(e.target.value as 'created_at' | 'total_amount');
+                  setSortBy(e.target.value as 'createdAt' | 'total' | 'status');
                   setCurrentPage(1);
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="created_at">Newest First</option>
-                <option value="total_amount">Highest Value</option>
+                <option value="createdAt">Newest First</option>
+                <option value="total">Highest Value</option>
+                <option value="status">Status</option>
               </select>
             </div>
 
@@ -231,7 +253,7 @@ export default function AdminOrdersPage() {
               <button
                 onClick={() => {
                   setFilterStatus('');
-                  setSortBy('created_at');
+                  setSortBy('createdAt');
                   setCurrentPage(1);
                 }}
                 className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
@@ -316,34 +338,51 @@ export default function AdminOrdersPage() {
                         {order.id.substring(0, 8).toUpperCase()}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {order.user_email}
+                        {order.userEmail}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            statusColors[order.status as keyof typeof statusColors] ||
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[order.status as keyof typeof statusColors] ||
                             'bg-gray-100 text-gray-800'
-                          }`}
+                            }`}
                         >
                           {order.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                        ${order.total_amount.toFixed(2)}
+                        ${Number(order.total).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {order.items_count}
+                        {order.itemsCount}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {new Date(order.created_at).toLocaleDateString()}
+                        {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <Link
-                          href={`/admin/orders/${order.id}`}
-                          className="text-blue-600 hover:text-blue-700 font-medium"
-                        >
-                          View
-                        </Link>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link
+                            href={`/admin/orders/${order.id}`}
+                            className="text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            Voir
+                          </Link>
+                          {(order.status === 'processing' || order.status === 'pending_payment') && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(order.id)}
+                                className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded font-medium transition-colors"
+                              >
+                                ✅ Approuver
+                              </button>
+                              <button
+                                onClick={() => handleReject(order.id)}
+                                className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded font-medium transition-colors"
+                              >
+                                ❌ Rejeter
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -370,11 +409,10 @@ export default function AdminOrdersPage() {
                     <button
                       key={i + 1}
                       onClick={() => setCurrentPage(i + 1)}
-                      className={`w-10 h-10 ${
-                        currentPage === i + 1
-                          ? 'bg-blue-500 text-white'
-                          : 'border border-gray-300 hover:bg-gray-100'
-                      } rounded font-medium text-sm`}
+                      className={`w-10 h-10 ${currentPage === i + 1
+                        ? 'bg-blue-500 text-white'
+                        : 'border border-gray-300 hover:bg-gray-100'
+                        } rounded font-medium text-sm`}
                     >
                       {i + 1}
                     </button>

@@ -6,7 +6,7 @@ export class UploadedImage {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid')
+  @Column({ type: 'uuid', nullable: true })
   user_id: string;
 
   @Column({ type: 'varchar', length: 255 })

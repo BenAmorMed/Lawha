@@ -2,30 +2,30 @@ import { apiClient } from './api-client';
 
 export interface ProductSize {
   id: string;
-  product_id: string;
-  name: string;
-  dimensions: string;
-  price_modifier: number;
+  productId: string;
+  label: string;
+  widthCm: number;
+  heightCm: number;
+  priceDelta: number;
 }
 
 export interface FrameOption {
   id: string;
-  name: string;
-  description: string;
-  price_modifier: number;
+  label: string;
+  priceDelta: number;
 }
 
 export interface Product {
   id: string;
   name: string;
   description: string;
-  base_price: number;
+  basePrice: number;
   category: string;
-  image_url: string;
-  is_active: boolean;
-  created_at: string;
+  imageUrl?: string;
+  isActive: boolean;
+  createdAt: string;
   sizes: ProductSize[];
-  frame_options: FrameOption[];
+  frameOptions: FrameOption[];
 }
 
 export interface ProductList {
@@ -33,19 +33,20 @@ export interface ProductList {
   name: string;
   description: string;
   category: string;
-  base_price: number;
-  image_url: string;
-  is_active: boolean;
+  basePrice: number;
+  imageUrl?: string;
+  isActive: boolean;
 }
 
 export interface Template {
   id: string;
+  templateKey: string;
   name: string;
-  description: string;
   category: string;
-  preview_url: string;
+  thumbnail_url?: string;
   definition: Record<string, any>;
-  created_at: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export const productsApi = {

@@ -51,8 +51,8 @@ describe('EditorStore Logic', () => {
     beforeEach(() => {
         useEditorStore.getState().clearDraft();
         useEditorStore.setState({
-            selectedProduct: { id: 'p1', name: 'Product', base_price: 50 },
-            selectedSize: { id: 's1', label: '50x70', width_cm: 50, height_cm: 70, price_delta: 0 }
+            selectedProduct: { id: 'p1', name: 'Product', basePrice: 50 },
+            selectedSize: { id: 's1', label: '50x70', widthCm: 50, heightCm: 70, priceDelta: 0 }
         });
     });
 

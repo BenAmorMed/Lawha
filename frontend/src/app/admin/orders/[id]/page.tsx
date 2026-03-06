@@ -4,27 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import { adminApi } from '@/api/admin-api';
-
-interface OrderDetail {
-  id: string;
-  user_email: string;
-  status: string;
-  total_amount: number;
-  shipping_address: string;
-  tracking_number?: string;
-  items: Array<{
-    id: string;
-    quantity: number;
-    unit_price: number;
-    size_selected: string;
-    frame_option: string;
-    subtotal: number;
-  }>;
-  created_at: string;
-  shipped_at?: string;
-  delivered_at?: string;
-}
+import { adminApi, AdminOrderDetail } from '@/api/admin-api';
 
 const statusOptions = [
   { value: 'pending', label: 'Pending' },
@@ -42,7 +22,7 @@ export default function AdminOrderDetailPage() {
   const { user } = useAuthStore();
   const orderId = params.id as string;
 
-  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [order, setOrder] = useState<AdminOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState('');
@@ -66,7 +46,7 @@ export default function AdminOrderDetailPage() {
       const data = await adminApi.getOrderDetail(orderId);
       setOrder(data);
       setNewStatus(data.status);
-      setTrackingNumber(data.tracking_number || '');
+      setTrackingNumber(data.trackingNumber || '');
     } catch (err: any) {
       setError(
         err.response?.data?.message || 'Failed to load order details.'
@@ -137,7 +117,7 @@ export default function AdminOrderDetailPage() {
             Order #{order.id.substring(0, 8).toUpperCase()}
           </h1>
           <p className="text-gray-600 mt-1">
-            Customer: {order.user_email}
+            Customer: {order.userEmail}
           </p>
         </div>
       </header>
@@ -146,7 +126,7 @@ export default function AdminOrderDetailPage() {
         {/* Status Update Section */}
         <div className="bg-white rounded-lg p-8 mb-8 shadow">
           <h2 className="text-lg font-bold text-gray-900 mb-6">Update Order Status</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -232,7 +212,7 @@ export default function AdminOrderDetailPage() {
               <div className="flex justify-between items-center">
                 <span className="text-lg font-bold text-gray-900">Total</span>
                 <span className="text-2xl font-bold text-blue-600">
-                  ${order.total_amount.toFixed(2)}
+                  ${order.total.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -250,11 +230,11 @@ export default function AdminOrderDetailPage() {
                 </p>
               </div>
 
-              {order.tracking_number && (
+              {order.trackingNumber && (
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Tracking Number</p>
                   <p className="font-mono text-sm text-gray-900">
-                    {order.tracking_number}
+                    {order.trackingNumber}
                   </p>
                 </div>
               )}
@@ -262,7 +242,7 @@ export default function AdminOrderDetailPage() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">Order Placed</p>
                 <p className="text-sm text-gray-900">
-                  {new Date(order.created_at).toLocaleString()}
+                  {new Date(order.createdAt).toLocaleString()}
                 </p>
               </div>
 

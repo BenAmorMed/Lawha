@@ -271,4 +271,26 @@ export class AdminService {
       status,
     };
   }
+
+  async approveOrder(orderId: string) {
+    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    if (!order) {
+      throw new NotFoundException(`Order ${orderId} not found`);
+    }
+    order.status = 'printing' as any;
+    await this.ordersRepository.save(order);
+    this.logger.log(`Order ${orderId} approved for printing`);
+    return { id: order.id, status: order.status };
+  }
+
+  async rejectOrder(orderId: string, reason?: string) {
+    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    if (!order) {
+      throw new NotFoundException(`Order ${orderId} not found`);
+    }
+    order.status = 'cancelled' as any;
+    await this.ordersRepository.save(order);
+    this.logger.log(`Order ${orderId} rejected. Reason: ${reason || 'none'}`);
+    return { id: order.id, status: order.status, reason };
+  }
 }

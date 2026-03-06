@@ -1,0 +1,4 @@
+﻿src/app/editor/page.tsx(4,30): error TS2307: Cannot find module '@/components/editor/ConvaCanvasEditor' or its corresponding type declarations.
+src/components/editor/TextPropertiesEditor.tsx(4,10): error TS2305: Module '"@/store/editorStore"' has no exported member 'CanvasElement'.
+src/store/editorStore.test.ts(54,59): error TS2561: Object literal may only specify known properties, but 'base_price' does not exist in type 'Product'. Did you mean to write 'basePrice'?
+src/store/editorStore.test.ts(55,55): error TS2561: Object literal may only specify known properties, but 'width_cm' does not exist in type 'ProductSize'. Did you mean to write 'widthCm'?

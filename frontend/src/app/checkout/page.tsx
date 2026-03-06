@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useEditorStore } from '@/store/editorStore';
+import dynamic from 'next/dynamic';
 import { AlertCircle, Loader2, ShoppingCart, Package } from 'lucide-react';
+
+const CanvasEditor = dynamic(() => import('@/components/editor/CanvasEditor').then(mod => mod.CanvasEditor), { ssr: false });
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -23,6 +26,8 @@ type CheckoutForm = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const canvasRef = useRef<any>(null);
+
   const {
     canCheckout,
     selectedTemplate,
@@ -42,15 +47,28 @@ export default function CheckoutPage() {
     formState: { errors, isSubmitting },
   } = useForm<CheckoutForm>({ resolver: zodResolver(checkoutSchema) });
 
-  const sizePrice = parseFloat((selectedSize as any)?.price_delta || 0);
-  const framePrice = parseFloat((selectedFrame as any)?.price_delta || 0);
+  const sizePrice = parseFloat((selectedSize as any)?.priceDelta || 0);
+  const framePrice = parseFloat((selectedFrame as any)?.priceDelta || 0);
   const total = (sizePrice + framePrice).toFixed(2);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const onSubmit = async (data: CheckoutForm) => {
     setSubmitError(null);
     try {
-      const previewUrl = `preview_placeholder`;
+      // Étape 2 : Snapshot Design
+      const dataUrl = canvasRef.current?.getPreviewDataUrl();
+      if (!dataUrl) throw new Error('Canvas snapshot failed');
+
+      // Étape 3 : Upload preview avant checkout
+      const previewRes = await fetch(`${API_BASE}/images/upload-preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl })
+      });
+
+      if (!previewRes.ok) throw new Error('Failed to upload preview snapshot');
+      const { previewUrl } = await previewRes.json();
+
       const body = {
         productSizeId: (selectedSize as any)?.id ?? 'unknown',
         frameOptionId: (selectedFrame as any)?.id ?? undefined,
@@ -58,8 +76,9 @@ export default function CheckoutPage() {
         previewUrl,
         ...data,
       };
-      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') || '' : '';
-      const res = await fetch(`${API_BASE}/api/v1/orders`, {
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') || '' : '';
+      const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,6 +86,7 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify(body),
       });
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.message || 'Erreur lors de la commande');
@@ -98,8 +118,15 @@ export default function CheckoutPage() {
               <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Package className="w-4 h-4" /> Récapitulatif
               </h2>
-              <div className="aspect-[3/4] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                <span className="text-gray-400 text-sm">Aperçu du design</span>
+              <div className="aspect-[3/4] bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden border border-gray-100">
+                {/* @ts-ignore */}
+                <CanvasEditor
+                  ref={canvasRef}
+                  width={selectedTemplate?.definition.canvasSize.width || 0}
+                  height={selectedTemplate?.definition.canvasSize.height || 0}
+                  widthCm={selectedSize?.widthCm}
+                  heightCm={selectedSize?.heightCm}
+                />
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">

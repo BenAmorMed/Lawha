@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { setUser, setToken } = useAuthStore();
+  const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,10 +20,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await authApi.login(email, password);
-      const { user, access_token } = response.data;
-      setUser(user);
-      setToken(access_token);
+      await login(email, password);
       // Redirect to admin dashboard
       router.push('/admin/analytics');
     } catch (err: any) {

@@ -84,15 +84,16 @@ if (typeof window !== 'undefined') {
   const savedToken = localStorage.getItem('access_token');
   const savedUser = localStorage.getItem('user');
 
-  if (savedToken) {
+  if (savedToken && savedToken !== 'null' && savedToken !== 'undefined') {
     useAuthStore.setState({ token: savedToken });
   }
 
-  if (savedUser) {
+  if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
     try {
       useAuthStore.setState({ user: JSON.parse(savedUser) });
     } catch (e) {
       console.error('Failed to parse saved user', e);
+      localStorage.removeItem('user');
     }
   }
 }

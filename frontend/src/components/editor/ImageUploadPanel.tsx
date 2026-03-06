@@ -3,7 +3,9 @@
 import React, { useRef, useState } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { useEditorStore, UploadedImage } from '@/store/editorStore';
+import { useAuthStore } from '@/store/authStore';
 import { DpiBadge } from './DpiBadge';
+import { apiClient } from '@/lib/api-client';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -21,6 +23,7 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { token, logout } = useAuthStore();
 
     const hasBlockedImages = layers.some(
         (l) => l.type === 'image' && (l as any).dpiStatus === 'blocked',
@@ -40,16 +43,14 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
                 formData.append('printWidthCm', String(printWidthCm));
                 formData.append('printHeightCm', String(printHeightCm));
 
-                const token = localStorage.getItem('auth_token') || '';
-                const res = await fetch(`${API_BASE}/api/v1/images/upload`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: formData,
+                const token = localStorage.getItem('access_token') || '';
+                const res = await apiClient.post('/images/upload', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
                 });
 
-                if (!res.ok) throw new Error('Échec du téléchargement');
-
-                const data = await res.json();
+                const data = res.data;
 
                 const uploadedImage: UploadedImage = {
                     id: data.id,
@@ -139,9 +140,12 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
                                     draggable
                                     onDragStart={(e) => e.dataTransfer.setData('imageId', img.id)}
                                     onClick={() => {
-                                        // If template has exactly one slot, auto-assign
-                                        if (selectedTemplate?.definition.slots.length === 1) {
+                                        // If template has slots, assign to first slot if it's the only one
+                                        if (selectedTemplate?.definition.slots && selectedTemplate.definition.slots.length === 1) {
                                             handleDropToSlot(selectedTemplate.definition.slots[0].id, img);
+                                        } else {
+                                            // Freestyle canvas: add as a new layer
+                                            useEditorStore.getState().addImageLayer(img);
                                         }
                                     }}
                                 >

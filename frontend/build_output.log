@@ -1,0 +1,69 @@
+
+> canvas-platform-frontend@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env
+
+   Creating an optimized production build ...
+Error: A PostCSS Plugin was passed as a function using require(), but it must be provided as a string.
+Read more: https://nextjs.org/docs/messages/postcss-shape
+Failed to compile.
+
+./src/app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+Error: Malformed PostCSS Configuration
+    at /app/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:151:19
+    at Array.forEach (<anonymous>)
+    at getPostCssPlugins (/app/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:125:13)
+    at async /app/node_modules/next/dist/build/webpack/config/blocks/css/index.js:124:36
+    at async /app/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js:51:40
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+
+Import trace for requested module:
+./src/app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/globals.css
+./src/app/globals.css
+
+./src/app/globals.css
+Error: Malformed PostCSS Configuration
+    at /app/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:151:19
+    at Array.forEach (<anonymous>)
+    at getPostCssPlugins (/app/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:125:13)
+    at async /app/node_modules/next/dist/build/webpack/config/blocks/css/index.js:124:36
+    at async /app/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js:51:40
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at tryRunOrWebpackError (/app/node_modules/next/dist/compiled/webpack/bundle5.js:28:312989)
+    at __webpack_require_module__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:28:131165)
+    at __nested_webpack_require_153728__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:28:130607)
+    at /app/node_modules/next/dist/compiled/webpack/bundle5.js:28:131454
+    at symbolIterator (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+    at done (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14824)
+    at Hook.eval [as callAsync] (eval at create (/app/node_modules/next/dist/compiled/webpack/bundle5.js:13:28858), <anonymous>:15:1)
+    at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/app/node_modules/next/dist/compiled/webpack/bundle5.js:13:26012)
+    at /app/node_modules/next/dist/compiled/webpack/bundle5.js:28:130328
+    at symbolIterator (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14402)
+-- inner error --
+Error: Malformed PostCSS Configuration
+    at /app/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:151:19
+    at Array.forEach (<anonymous>)
+    at getPostCssPlugins (/app/node_modules/next/dist/build/webpack/config/blocks/css/plugins.js:125:13)
+    at async /app/node_modules/next/dist/build/webpack/config/blocks/css/index.js:124:36
+    at async /app/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js:51:40
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at Object.<anonymous> (/app/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!/app/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!/app/src/app/globals.css:1:7)
+    at /app/node_modules/next/dist/compiled/webpack/bundle5.js:28:922493
+    at Hook.eval [as call] (eval at create (/app/node_modules/next/dist/compiled/webpack/bundle5.js:13:28636), <anonymous>:7:1)
+    at Hook.CALL_DELEGATE [as _call] (/app/node_modules/next/dist/compiled/webpack/bundle5.js:13:25906)
+    at /app/node_modules/next/dist/compiled/webpack/bundle5.js:28:131198
+    at tryRunOrWebpackError (/app/node_modules/next/dist/compiled/webpack/bundle5.js:28:312943)
+    at __webpack_require_module__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:28:131165)
+    at __nested_webpack_require_153728__ (/app/node_modules/next/dist/compiled/webpack/bundle5.js:28:130607)
+    at /app/node_modules/next/dist/compiled/webpack/bundle5.js:28:131454
+    at symbolIterator (/app/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+
+Generated code for /app/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!/app/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!/app/src/app/globals.css
+
+Import trace for requested module:
+./src/app/globals.css
+
+
+> Build failed because of webpack errors

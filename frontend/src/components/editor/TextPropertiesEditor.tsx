@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CanvasElement } from '@/store/editorStore';
+import { Layer, TextLayer } from '@/store/editorStore';
 
 interface TextPropertiesEditorProps {
-  element: CanvasElement | null;
-  onUpdate: (id: string, updates: Partial<CanvasElement>) => void;
+  element: Layer | null;
+  onUpdate: (id: string, updates: Partial<TextLayer>) => void;
 }
 
 export const TextPropertiesEditor: React.FC<TextPropertiesEditorProps> = ({
@@ -18,9 +18,9 @@ export const TextPropertiesEditor: React.FC<TextPropertiesEditorProps> = ({
 
   useEffect(() => {
     if (element && element.type === 'text') {
-      setText(element.text || '');
-      setFontSize(element.fontSize || 24);
-      setFill(element.fill || '#000000');
+      setText(element.content || '');
+      setFontSize(element.size || 24);
+      setFill(element.color || '#000000');
     }
   }, [element]);
 
@@ -30,17 +30,17 @@ export const TextPropertiesEditor: React.FC<TextPropertiesEditorProps> = ({
 
   const handleTextChange = (newText: string) => {
     setText(newText);
-    onUpdate(element.id, { text: newText });
+    onUpdate(element.id, { content: newText });
   };
 
   const handleFontSizeChange = (newSize: number) => {
     setFontSize(newSize);
-    onUpdate(element.id, { fontSize: newSize });
+    onUpdate(element.id, { size: newSize });
   };
 
   const handleColorChange = (newColor: string) => {
     setFill(newColor);
-    onUpdate(element.id, { fill: newColor });
+    onUpdate(element.id, { color: newColor });
   };
 
   return (
@@ -79,11 +79,10 @@ export const TextPropertiesEditor: React.FC<TextPropertiesEditorProps> = ({
             <button
               key={size}
               onClick={() => handleFontSizeChange(size)}
-              className={`px-3 py-1 rounded text-sm font-medium ${
-                fontSize === size
+              className={`px-3 py-1 rounded text-sm font-medium ${fontSize === size
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                }`}
             >
               {size}
             </button>

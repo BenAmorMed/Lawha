@@ -25,11 +25,11 @@ export class ImagesService {
     private readonly imageRepository: Repository<UploadedImage>,
     private readonly configService: ConfigService,
   ) {
-    const endpoint = this.configService.get('S3_ENDPOINT', 'minio');
-    const port = parseInt(this.configService.get('S3_PORT', '9000'), 10);
-    const useSSL = this.configService.get('S3_USE_SSL', 'false') === 'true';
-    const accessKey = this.configService.get('S3_ACCESS_KEY', 'minioadmin');
-    const secretKey = this.configService.get('S3_SECRET_KEY', 'minioadmin123');
+    const endpoint = this.configService.get('MINIO_ENDPOINT', 'localhost');
+    const port = parseInt(this.configService.get('MINIO_PORT', '9000'), 10);
+    const useSSL = this.configService.get('MINIO_USE_SSL', 'false') === 'true';
+    const accessKey = this.configService.get('MINIO_ACCESS_KEY', 'minioadmin');
+    const secretKey = this.configService.get('MINIO_SECRET_KEY', 'minioadmin123');
 
     this.minioClient = new MinIOClient({
       endPoint: endpoint,
@@ -55,14 +55,19 @@ export class ImagesService {
 
   async uploadImage(
     file: IFile,
-    userId: string,
+    userId?: string,
     printWidthCm: number = 30,
     printHeightCm: number = 40,
     dpiTarget: number = 300,
   ): Promise<any> {
     this.validateFile(file);
 
-    const metadata = await sharp(file.buffer).metadata();
+    let metadata;
+    try {
+      metadata = await sharp(file.buffer).metadata();
+    } catch (err) {
+      throw new Error(`Failed to process image: ${err.message}`);
+    }
     const widthPx = metadata.width || 0;
     const heightPx = metadata.height || 0;
 
@@ -100,7 +105,7 @@ export class ImagesService {
       s3_url: s3Url,
       s3_thumbnail_url: thumbnailUrl,
       dpi_ok: quality.dpiOk,
-      quality_score: quality.qualityScore,
+      quality_score: Math.round(quality.qualityScore * 100),
       metadata: JSON.stringify({
         colorspace: (metadata as any).colorspace || 'unknown',
         hasAlpha: metadata.hasAlpha,
@@ -214,7 +219,7 @@ export class ImagesService {
     }
 
     try {
-      const bucketName = this.configService.get('S3_BUCKET', 'canvas-platform');
+      const bucketName = this.configService.get('MINIO_BUCKET', 'canvas-platform');
       await this.minioClient.removeObject(bucketName, image.stored_filename);
       await this.minioClient.removeObject(bucketName, `thumbnails/${image.stored_filename}`);
     } catch (error) {
@@ -238,24 +243,44 @@ export class ImagesService {
 
   private async uploadToMinIO(filename: string, buffer: Buffer, mimetype: string): Promise<string> {
     try {
-      const bucketName = this.configService.get('S3_BUCKET', 'canvas-platform');
+      const bucketName = this.configService.get('MINIO_BUCKET', 'canvas-platform');
       const bucketExists = await this.minioClient.bucketExists(bucketName);
       if (!bucketExists) {
         await this.minioClient.makeBucket(bucketName, 'us-east-1');
+        // Set public policy for the new bucket
+        const policy = {
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              Principal: { AWS: ['*'] },
+              Action: ['s3:GetBucketLocation', 's3:ListBucket'],
+              Resource: [`arn:aws:s3:::${bucketName}`],
+            },
+            {
+              Effect: 'Allow',
+              Principal: { AWS: ['*'] },
+              Action: ['s3:GetObject'],
+              Resource: [`arn:aws:s3:::${bucketName}/*`],
+            },
+          ],
+        };
+        await this.minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
       }
       await this.minioClient.putObject(bucketName, filename, buffer, buffer.length, {
         'Content-Type': mimetype,
       });
-      const endpoint = this.configService.get('S3_ENDPOINT', 'minio');
-      const port = this.configService.get('S3_PORT', '9000');
+      const endpoint = this.configService.get('MINIO_ENDPOINT', 'localhost');
+      const port = this.configService.get('MINIO_PORT', '9000');
       const protocol =
-        this.configService.get('S3_USE_SSL', 'false') === 'true' ? 'https' : 'http';
+        this.configService.get('MINIO_USE_SSL', 'false') === 'true' ? 'https' : 'http';
       const publicEndpoint = this.configService.get(
-        'S3_PUBLIC_ENDPOINT',
+        'MINIO_PUBLIC_ENDPOINT',
         `${protocol}://${endpoint}:${port}`,
       );
       return `${publicEndpoint}/${bucketName}/${filename}`;
     } catch (error) {
+      console.error('MinIO upload error:', error);
       throw new Error(`Failed to upload file to storage: ${error.message}`);
     }
   }

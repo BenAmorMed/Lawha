@@ -2,32 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { productsApi, ProductList } from '@/api/products-api';
+import { productsApi, Product, ProductSize, FrameOption } from '@/api/products-api';
 import { useEditorStore } from '@/store/editorStore';
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  base_price: number;
-  category: string;
-  image_url: string;
-  is_active: boolean;
-}
-
-interface ProductSize {
-  id: string;
-  name: string;
-  dimensions: string;
-  price_modifier: number;
-}
-
-interface FrameOption {
-  id: string;
-  name: string;
-  description: string;
-  price_modifier: number;
-}
 
 export default function GalleryPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -47,14 +23,15 @@ export default function GalleryPage() {
       try {
         setLoading(true);
         const data = await productsApi.getProducts();
-        setProducts(data as Product[]);
+        setProducts(data as any as Product[]);
         if (data.length > 0) {
-          setSelectedProduct(data[0]);
-          const productDetails = await productsApi.getProduct(data[0].id);
+          const firstProduct = data[0];
+          setSelectedProduct(firstProduct as any as Product);
+          const productDetails = await productsApi.getProduct(firstProduct.id);
           setSizes(productDetails.sizes || []);
-          setFrames(productDetails.frame_options || []);
+          setFrames(productDetails.frameOptions || []);
           setSelectedSize(productDetails.sizes?.[0]?.id || '');
-          setSelectedFrame(productDetails.frame_options?.[0]?.id || '');
+          setSelectedFrame(productDetails.frameOptions?.[0]?.id || '');
         }
       } catch (err) {
         setError('Failed to load products');
@@ -72,25 +49,33 @@ export default function GalleryPage() {
     try {
       const productDetails = await productsApi.getProduct(product.id);
       setSizes(productDetails.sizes || []);
-      setFrames(productDetails.frame_options || []);
+      setFrames(productDetails.frameOptions || []);
       setSelectedSize(productDetails.sizes?.[0]?.id || '');
-      setSelectedFrame(productDetails.frame_options?.[0]?.id || '');
+      setSelectedFrame(productDetails.frameOptions?.[0]?.id || '');
     } catch (err) {
       console.error('Failed to load product details:', err);
     }
   };
 
   const handleStartDesigning = () => {
-    if (selectedProduct && selectedSize && selectedFrame) {
+    if (selectedProduct && selectedSize) {
+      const sizeObj = sizes.find(s => s.id === selectedSize);
+      const frameObj = frames.find(f => f.id === selectedFrame);
+
+      // Initialize store
+      const { setProduct, setSize, setFrame, setActivePanel } = useEditorStore.getState();
+
       setProduct({
-        productId: selectedProduct.id,
+        id: selectedProduct.id,
         name: selectedProduct.name,
-        width: 1200,
-        height: 900,
-        dpi: 300,
-        selectedSize,
-        selectedFrame,
+        basePrice: selectedProduct.basePrice
       });
+
+      if (sizeObj) setSize(sizeObj as any);
+      if (frameObj) setFrame(frameObj as any);
+
+      setActivePanel('templates');
+
       setShowModal(false);
       // Redirect to editor
       window.location.href = '/editor';
@@ -147,9 +132,9 @@ export default function GalleryPage() {
             >
               {/* Product Image */}
               <div className="relative h-64 bg-gray-200">
-                {product.image_url ? (
+                {product.imageUrl ? (
                   <img
-                    src={product.image_url}
+                    src={product.imageUrl}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
@@ -168,7 +153,7 @@ export default function GalleryPage() {
                 {/* Price */}
                 <div className="mt-4 flex items-baseline gap-2">
                   <span className="text-2xl font-bold text-gray-900">
-                    ${product.base_price.toFixed(2)}
+                    ${(product.basePrice || 0).toFixed(2)}
                   </span>
                   <span className="text-sm text-gray-500">starting price</span>
                 </div>
@@ -219,17 +204,16 @@ export default function GalleryPage() {
                     <button
                       key={size.id}
                       onClick={() => setSelectedSize(size.id)}
-                      className={`p-3 rounded-lg border-2 transition-colors ${
-                        selectedSize === size.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`p-3 rounded-lg border-2 transition-colors ${selectedSize === size.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                     >
-                      <div className="font-medium">{size.name}</div>
-                      <div className="text-sm text-gray-600">{size.dimensions}</div>
-                      {size.price_modifier > 0 && (
+                      <div className="font-medium">{size.label}</div>
+                      <div className="text-sm text-gray-600">{size.widthCm}x{size.heightCm} cm</div>
+                      {size.priceDelta > 0 && (
                         <div className="text-sm text-gray-500">
-                          +${size.price_modifier.toFixed(2)}
+                          +${Number(size.priceDelta).toFixed(2)}
                         </div>
                       )}
                     </button>
@@ -245,22 +229,18 @@ export default function GalleryPage() {
                     <button
                       key={frame.id}
                       onClick={() => setSelectedFrame(frame.id)}
-                      className={`w-full p-3 rounded-lg border-2 transition-colors text-left ${
-                        selectedFrame === frame.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`w-full p-3 rounded-lg border-2 transition-colors text-left ${selectedFrame === frame.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                     >
                       <div className="flex justify-between">
                         <div>
-                          <div className="font-medium">{frame.name}</div>
-                          <div className="text-sm text-gray-600">
-                            {frame.description}
-                          </div>
+                          <div className="font-medium">{frame.label}</div>
                         </div>
-                        {frame.price_modifier > 0 && (
+                        {frame.priceDelta > 0 && (
                           <div className="text-sm text-gray-700 font-medium">
-                            +${frame.price_modifier.toFixed(2)}
+                            +${Number(frame.priceDelta).toFixed(2)}
                           </div>
                         )}
                       </div>
@@ -274,27 +254,27 @@ export default function GalleryPage() {
                 <div className="flex justify-between mb-2">
                   <span className="text-gray-600">Base Price:</span>
                   <span className="font-medium">
-                    ${selectedProduct.base_price.toFixed(2)}
+                    ${(selectedProduct.basePrice || 0).toFixed(2)}
                   </span>
                 </div>
-                {(sizes.find((s) => s.id === selectedSize)?.price_modifier ?? 0) > 0 && (
+                {(sizes.find((s) => s.id === selectedSize)?.priceDelta ?? 0) > 0 && (
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-600">Size Modifier:</span>
                     <span className="font-medium">
                       +$
-                      {(
-                        sizes.find((s) => s.id === selectedSize)?.price_modifier || 0
+                      {Number(
+                        sizes.find((s) => s.id === selectedSize)?.priceDelta || 0
                       ).toFixed(2)}
                     </span>
                   </div>
                 )}
-                {(frames.find((f) => f.id === selectedFrame)?.price_modifier ?? 0) > 0 && (
+                {(frames.find((f) => f.id === selectedFrame)?.priceDelta ?? 0) > 0 && (
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-600">Frame:</span>
                     <span className="font-medium">
                       +$
-                      {(
-                        frames.find((f) => f.id === selectedFrame)?.price_modifier ||
+                      {Number(
+                        frames.find((f) => f.id === selectedFrame)?.priceDelta ||
                         0
                       ).toFixed(2)}
                     </span>
@@ -305,9 +285,9 @@ export default function GalleryPage() {
                   <span className="text-xl font-bold text-blue-600">
                     $
                     {(
-                      selectedProduct.base_price +
-                      (sizes.find((s) => s.id === selectedSize)?.price_modifier || 0) +
-                      (frames.find((f) => f.id === selectedFrame)?.price_modifier || 0)
+                      (selectedProduct.basePrice || 0) +
+                      Number(sizes.find((s) => s.id === selectedSize)?.priceDelta || 0) +
+                      Number(frames.find((f) => f.id === selectedFrame)?.priceDelta || 0)
                     ).toFixed(2)}
                   </span>
                 </div>

@@ -1,0 +1,39 @@
+
+ RUN  v4.0.18 C:/Users/bichiou/Documents/2025-2026/stage/Project/files/frontend
+
+ ❯ src/store/editorStore.test.ts (7 tests | 1 failed) 30ms
+     ✓ initialise les TextLayers vides a partir du template 8ms
+     ✓ cree un ImageLayer quand on assigne une image a un slot 2ms
+     ✓ canCheckout retourne false si un slot required est vide 2ms
+     ✓ canCheckout retourne false si une image est bloquee (DPI faible) 1ms
+     ✓ canCheckout retourne true si tout est rempli et valide 1ms
+     ✓ getDesignJson retourne un objet JSON 1ms
+     × saveToLocalStorage/loadFromLocalStorage fonctionne 12ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/store/editorStore.test.ts > EditorStore Logic > saveToLocalStorage/loadFromLocalStorage fonctionne
+AssertionError: expected undefined to be 't1' // Object.is equality
+
+[32m- Expected:[39m 
+"t1"
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/store/editorStore.test.ts:122:64
+    120|         // reload
+    121|         useEditorStore.getState().loadFromLocalStorage();
+    122|         expect(useEditorStore.getState().selectedTemplate?.id).toBe('t…
+       |                                                                ^
+    123|         expect(useEditorStore.getState().layers).toHaveLength(4);
+    124|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+   Start at  23:33:53
+   Duration  1.29s (transform 165ms, setup 0ms, import 253ms, tests 30ms, environment 0ms)
+
