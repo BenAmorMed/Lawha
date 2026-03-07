@@ -81,7 +81,13 @@ export default function AdminAnalyticsPage() {
                 href="/admin/orders"
                 className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
               >
-                Manage Orders
+                Orders
+              </Link>
+              <Link
+                href="/admin/reviews"
+                className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 font-medium"
+              >
+                Reviews
               </Link>
               <Link
                 href="/"

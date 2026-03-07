@@ -30,11 +30,11 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       const data = await reviewsApi.getProductReviews(productId, 10, 0, sortBy);
       setReviews(data.reviews);
       if (data.productRating) {
-        setStats({
+        setStats((prev) => ({
+          ...prev,
           averageRating: data.productRating.average,
           totalReviews: data.productRating.total,
-          ratingDistribution: stats.ratingDistribution // Fallback to current until stats fetch finishes
-        });
+        }));
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load reviews');

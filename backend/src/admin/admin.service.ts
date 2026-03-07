@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from '../orders/order.entity';
+import { Review } from '../reviews/review.entity';
 
 @Injectable()
 export class AdminService {
@@ -10,6 +11,8 @@ export class AdminService {
   constructor(
     @InjectRepository(Order)
     private ordersRepository: Repository<Order>,
+    @InjectRepository(Review)
+    private reviewsRepository: Repository<Review>,
   ) { }
 
   async getAllOrders(filters: {
@@ -292,5 +295,78 @@ export class AdminService {
     await this.ordersRepository.save(order);
     this.logger.log(`Order ${orderId} rejected. Reason: ${reason || 'none'}`);
     return { id: order.id, status: order.status, reason };
+  }
+
+  // --- REVIEW MANAGEMENT ---
+
+  async getAllReviews(filters: {
+    productId?: string;
+    userId?: string;
+    rating?: number;
+    limit?: number;
+    offset?: number;
+    sortBy?: 'createdAt' | 'rating' | 'helpfulCount';
+    sortOrder?: 'ASC' | 'DESC';
+  }) {
+    const {
+      productId,
+      userId,
+      rating,
+      limit = 20,
+      offset = 0,
+      sortBy = 'createdAt',
+      sortOrder = 'DESC',
+    } = filters;
+
+    const query = this.reviewsRepository
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.user', 'user')
+      .leftJoinAndSelect('review.product', 'product');
+
+    if (productId) {
+      query.andWhere('review.productId = :productId', { productId });
+    }
+
+    if (userId) {
+      query.andWhere('review.userId = :userId', { userId });
+    }
+
+    if (rating) {
+      query.andWhere('review.rating = :rating', { rating });
+    }
+
+    const total = await query.getCount();
+
+    // Whitelist sortBy fields to prevent SQL injection
+    const allowedSortBy = ['createdAt', 'rating', 'helpfulCount'];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
+    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
+    const reviews = await query
+      .orderBy(`review.${safeSortBy}`, safeSortOrder)
+      .skip(offset)
+      .take(limit)
+      .getMany();
+
+    return {
+      data: reviews,
+      pagination: {
+        total,
+        limit,
+        offset,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async deleteReviewAdmin(reviewId: string) {
+    const review = await this.reviewsRepository.findOne({ where: { id: reviewId } });
+    if (!review) {
+      throw new NotFoundException(`Review ${reviewId} not found`);
+    }
+
+    await this.reviewsRepository.delete(reviewId);
+    this.logger.log(`Review ${reviewId} deleted by Admin`);
+    return { success: true };
   }
 }

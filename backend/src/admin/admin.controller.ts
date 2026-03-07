@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
 import { AdminService } from './admin.service';
 
-@Controller('api/v1/admin/orders')
+@Controller('api/v1/admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) { }
@@ -26,7 +26,7 @@ export class AdminController {
    * - sortBy: Sort field (createdAt, total, status)
    * - sortOrder: ASC or DESC
    */
-  @Get()
+  @Get('orders')
   async getAllOrders(
     @Query('status') status?: string,
     @Query('limit') limit: string = '20',
@@ -46,7 +46,7 @@ export class AdminController {
   /**
    * Get single order details for admin
    */
-  @Get(':id')
+  @Get('orders/:id')
   async getOrderById(@Param('id') orderId: string) {
     return this.adminService.getOrderById(orderId);
   }
@@ -57,7 +57,7 @@ export class AdminController {
    * - status: New order status
    * - trackingNumber?: Optional tracking number when shipping
    */
-  @Patch(':id/status')
+  @Patch('orders/:id/status')
   async updateOrderStatus(
     @Param('id') orderId: string,
     @Body() body: { status: string; trackingNumber?: string },
@@ -76,7 +76,7 @@ export class AdminController {
    * - status: New status for all orders
    * - trackingNumber?: Optional tracking number
    */
-  @Post('bulk-update')
+  @Post('orders/bulk-update')
   async bulkUpdateStatus(
     @Body()
     body: {
@@ -105,7 +105,7 @@ export class AdminController {
    * Approve an order for printing
    * Changes status from any → 'printing'
    */
-  @Post(':id/approve')
+  @Post('orders/:id/approve')
   async approveOrder(@Param('id') orderId: string) {
     return this.adminService.approveOrder(orderId);
   }
@@ -114,11 +114,39 @@ export class AdminController {
    * Reject an order
    * Changes status → 'cancelled'
    */
-  @Post(':id/reject')
+  @Post('orders/:id/reject')
   async rejectOrder(
     @Param('id') orderId: string,
     @Body() body: { reason?: string },
   ) {
     return this.adminService.rejectOrder(orderId, body.reason);
+  }
+
+  // --- REVIEW MANAGEMENT ---
+
+  @Get('reviews')
+  async getAllReviews(
+    @Query('productId') productId?: string,
+    @Query('userId') userId?: string,
+    @Query('rating') rating?: string,
+    @Query('limit') limit: string = '20',
+    @Query('offset') offset: string = '0',
+    @Query('sortBy') sortBy: 'createdAt' | 'rating' | 'helpfulCount' = 'createdAt',
+    @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'DESC',
+  ) {
+    return this.adminService.getAllReviews({
+      productId,
+      userId,
+      rating: rating ? parseInt(rating, 10) : undefined,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10),
+      sortBy,
+      sortOrder,
+    });
+  }
+
+  @Delete('reviews/:id')
+  async deleteReview(@Param('id') reviewId: string) {
+    return this.adminService.deleteReviewAdmin(reviewId);
   }
 }
