@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import ReviewForm from '@/components/reviews/ReviewForm';
 import ReviewsList from '@/components/reviews/ReviewsList';
@@ -10,8 +10,10 @@ import ReviewsList from '@/components/reviews/ReviewsList';
 export default function ProductReviewsPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const productId = params.id as string;
+  const orderId = searchParams.get('orderId') || undefined;
   const [reviewAdded, setReviewAdded] = useState(false);
 
   if (!productId) {
@@ -56,6 +58,7 @@ export default function ProductReviewsPage() {
               <div className="mb-12">
                 <ReviewForm
                   productId={productId}
+                  orderId={orderId}
                   onSuccess={() => setReviewAdded(!reviewAdded)}
                 />
               </div>

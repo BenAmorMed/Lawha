@@ -39,7 +39,10 @@ export class ReviewsController {
       rating: review.rating,
       title: review.title,
       comment: review.comment,
-      created_at: review.createdAt,
+      createdAt: review.createdAt,
+      updatedAt: review.updatedAt,
+      verifiedPurchase: review.verifiedPurchase,
+      helpfulCount: review.helpfulCount,
     };
   }
 
@@ -69,6 +72,19 @@ export class ReviewsController {
   @Get('product/:productId/stats')
   async getProductStats(@Param('productId') productId: string) {
     return this.reviewsService.getProductStats(productId);
+  }
+
+  /**
+   * Get rating stats for multiple products
+   * Query params: ids (comma separated UUIDs)
+   */
+  @Get('products/stats')
+  async getMultipleProductStats(@Query('ids') ids?: string) {
+    if (!ids) {
+      return {};
+    }
+    const productIds = ids.split(',');
+    return this.reviewsService.getMultipleProductStats(productIds);
   }
 
   /**

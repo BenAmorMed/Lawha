@@ -42,8 +42,8 @@ export default function ReviewForm({
         rating,
         title,
         comment,
-        product_id: productId,
-        order_id: orderId,
+        productId,
+        orderId,
       });
 
       setRating(5);

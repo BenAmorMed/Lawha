@@ -5,17 +5,17 @@ export interface Review {
   rating: number;
   title: string;
   comment: string;
-  user_email?: string;
-  verified_purchase: boolean;
-  helpful_count: number;
-  created_at: string;
-  updated_at: string;
+  userEmail?: string;
+  verifiedPurchase: boolean;
+  helpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProductStats {
-  average_rating: number;
-  total_reviews: number;
-  rating_distribution: Record<number, number>;
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: Record<number, number>;
 }
 
 export const reviewsApi = {
@@ -24,8 +24,8 @@ export const reviewsApi = {
     rating: number;
     title: string;
     comment: string;
-    product_id: string;
-    order_id?: string;
+    productId: string;
+    orderId?: string;
   }): Promise<Review> => {
     const response = await apiClient.post('/reviews', data);
     return response.data;
@@ -40,7 +40,7 @@ export const reviewsApi = {
   ): Promise<{
     reviews: Review[];
     pagination: { total: number; limit: number; offset: number; pages: number };
-    product_rating: { average: number; total: number };
+    productRating: { average: number; total: number };
   }> => {
     const params = new URLSearchParams({
       limit: limit.toString(),
@@ -56,6 +56,16 @@ export const reviewsApi = {
   // Get rating stats for a product
   getProductStats: async (productId: string): Promise<ProductStats> => {
     const response = await apiClient.get(`/reviews/product/${productId}/stats`);
+    return response.data;
+  },
+
+  // Get rating stats for multiple products
+  getMultipleProductStats: async (
+    productIds: string[],
+  ): Promise<Record<string, { averageRating: number; totalReviews: number }>> => {
+    const response = await apiClient.get(
+      `/reviews/products/stats?ids=${productIds.join(',')}`,
+    );
     return response.data;
   },
 
