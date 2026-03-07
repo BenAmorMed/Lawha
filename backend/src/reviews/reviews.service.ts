@@ -134,7 +134,7 @@ export class ReviewsService {
         offset,
         pages: Math.ceil(Number(total) / limit),
       },
-      product_rating: {
+      productRating: {
         average: parseFloat(ratingQuery?.avg_rating || 0),
         total: parseInt(ratingQuery?.total_reviews || 0, 10),
       },
@@ -233,6 +233,33 @@ export class ReviewsService {
     return review;
   }
 
+  async getMultipleProductStats(productIds: string[]) {
+    const stats = await this.reviewsRepository
+      .createQueryBuilder('review')
+      .select('review.productId', 'productId')
+      .addSelect('AVG(review.rating)', 'averageRating')
+      .addSelect('COUNT(review.id)', 'totalReviews')
+      .where('review.productId IN (:...productIds)', { productIds })
+      .groupBy('review.productId')
+      .getRawMany();
+
+    const results: Record<string, { averageRating: number; totalReviews: number }> = {};
+
+    // Initialize with zeros for all requested IDs
+    productIds.forEach(id => {
+      results[id] = { averageRating: 0, totalReviews: 0 };
+    });
+
+    stats.forEach(item => {
+      results[item.productId] = {
+        averageRating: parseFloat(item.averageRating || 0),
+        totalReviews: parseInt(item.totalReviews || 0, 10),
+      };
+    });
+
+    return results;
+  }
+
   async getProductStats(productId: string) {
     const stats = await this.reviewsRepository
       .createQueryBuilder('review')
@@ -254,9 +281,9 @@ export class ReviewsService {
       .getRawOne();
 
     return {
-      average_rating: parseFloat(avgRating?.avg || 0),
-      total_reviews: totalReviews,
-      rating_distribution: stats.reduce(
+      averageRating: parseFloat(avgRating?.avg || 0),
+      totalReviews: totalReviews,
+      ratingDistribution: stats.reduce(
         (acc, item) => ({
           ...acc,
           [item.rating]: parseInt(item.count, 10),

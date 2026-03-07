@@ -11,9 +11,9 @@ interface ReviewsListProps {
 export default function ReviewsList({ productId, onReviewAdded }: ReviewsListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState({
-    average_rating: 0,
-    total_reviews: 0,
-    rating_distribution: {} as Record<number, number>,
+    averageRating: 0,
+    totalReviews: 0,
+    ratingDistribution: {} as Record<number, number>,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +29,13 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       setLoading(true);
       const data = await reviewsApi.getProductReviews(productId, 10, 0, sortBy);
       setReviews(data.reviews);
+      if (data.productRating) {
+        setStats({
+          averageRating: data.productRating.average,
+          totalReviews: data.productRating.total,
+          ratingDistribution: stats.ratingDistribution // Fallback to current until stats fetch finishes
+        });
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load reviews');
       console.error('Fetch reviews error:', err);
@@ -75,30 +82,30 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
 
       {/* Rating Summary */}
-      {stats.total_reviews > 0 && (
+      {stats.totalReviews > 0 && (
         <div className="mb-8 pb-8 border-b border-gray-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-4xl font-bold text-gray-900">
-                  {stats.average_rating.toFixed(1)}
+                  {stats.averageRating.toFixed(1)}
                 </span>
                 <span className="text-gray-600">out of 5</span>
               </div>
-              <div className="mb-2">{renderStars(Math.round(stats.average_rating))}</div>
+              <div className="mb-2">{renderStars(Math.round(stats.averageRating))}</div>
               <p className="text-sm text-gray-600">
-                Based on {stats.total_reviews} review
-                {stats.total_reviews !== 1 ? 's' : ''}
+                Based on {stats.totalReviews} review
+                {stats.totalReviews !== 1 ? 's' : ''}
               </p>
             </div>
 
             {/* Rating Breakdown */}
             <div className="space-y-2">
               {[5, 4, 3, 2, 1].map((stars) => {
-                const count = stats.rating_distribution[stars] || 0;
+                const count = stats.ratingDistribution[stars] || 0;
                 const percentage =
-                  stats.total_reviews > 0
-                    ? (count / stats.total_reviews) * 100
+                  stats.totalReviews > 0
+                    ? (count / stats.totalReviews) * 100
                     : 0;
 
                 return (
@@ -171,7 +178,7 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <div>{renderStars(review.rating)}</div>
-                    {review.verified_purchase && (
+                    {review.verifiedPurchase && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                         Verified Purchase
                       </span>
@@ -179,8 +186,8 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                   </div>
                   <h4 className="font-semibold text-gray-900">{review.title}</h4>
                   <p className="text-sm text-gray-600">
-                    by {review.user_email || 'Anonymous'} •{' '}
-                    {new Date(review.created_at).toLocaleDateString()}
+                    by {review.userEmail || 'Anonymous'} •{' '}
+                    {new Date(review.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -191,7 +198,7 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                 onClick={() => handleMarkHelpful(review.id)}
                 className="text-sm text-gray-600 hover:text-gray-900 border-b border-gray-300 hover:border-gray-900"
               >
-                👍 Helpful ({review.helpful_count})
+                👍 Helpful ({review.helpfulCount})
               </button>
             </div>
           ))}
