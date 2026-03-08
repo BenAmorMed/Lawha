@@ -71,13 +71,31 @@ const PhotoFrameEditor: React.FC = () => {
     setIsSaving(true);
     try {
       const designData = {
-        photos: photos.filter(p => p !== null),
+        photos: photos.filter(p => p !== null).map(p => ({
+          id: p!.id,
+          url: p!.url,
+          order: p!.order
+        })),
         frameConfig,
         textCustomization,
       };
 
-      // Simulating API call for now
-      // await axios.post('/api/v1/designs', designData);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
+      if (!token) {
+        setError('You must be logged in to save designs.');
+        return;
+      }
+
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}/designs`,
+        designData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
       alert('Design saved successfully!');
     } catch (err) {

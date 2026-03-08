@@ -63,6 +63,19 @@ export class ReviewsController {
   }
 
   /**
+   * Alias for the requested endpoint structure
+   */
+  @Get('/api/v1/products/:productId/reviews')
+  async getProductReviewsAlias(
+    @Param('productId') productId: string,
+    @Query('limit') limit: string = '10',
+    @Query('offset') offset: string = '0',
+    @Query('sortBy') sortBy: 'helpful' | 'recent' | 'rating' = 'recent',
+  ) {
+    return this.getProductReviews(productId, limit, offset, sortBy);
+  }
+
+  /**
    * Get rating stats for a product
    * Returns: average_rating, total_reviews, rating_distribution
    */
