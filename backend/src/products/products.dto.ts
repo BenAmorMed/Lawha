@@ -22,9 +22,15 @@ export class ProductDto {
   id: string;
   name: string;
   description: string;
-  basePrice: number;
+  originalPrice?: number;
+  currentPrice: number;
   category: string;
   imageUrl: string;
+  images?: string[];
+  rating: number;
+  reviewsCount: number;
+  isSpecial: boolean;
+  shippingFree: boolean;
   isActive: boolean;
   createdAt: Date;
   sizes: ProductSizeDto[];
@@ -35,8 +41,13 @@ export class ProductListDto {
   id: string;
   name: string;
   category: string;
-  basePrice: number;
+  originalPrice?: number;
+  currentPrice: number;
   imageUrl: string;
+  rating: number;
+  reviewsCount: number;
+  isSpecial: boolean;
+  shippingFree: boolean;
   isActive: boolean;
 }
 

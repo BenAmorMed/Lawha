@@ -11,20 +11,79 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
   ) { }
 
-  async getAllProducts(): Promise<ProductListDto[]> {
-    const products = await this.productRepository.find({
-      where: { isActive: true },
-      order: { createdAt: 'DESC' },
-    });
+  async getAllProducts(filters?: {
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    sortBy?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ products: ProductListDto[]; total: number }> {
+    const query = this.productRepository.createQueryBuilder('product')
+      .where('product.isActive = :isActive', { isActive: true });
 
-    return products.map((product) => ({
-      id: product.id,
-      name: product.name,
-      category: product.category,
-      basePrice: parseFloat(product.basePrice.toString()),
-      imageUrl: product.imageUrl,
-      isActive: product.isActive,
-    }));
+    if (filters?.category) {
+      query.andWhere('product.category = :category', { category: filters.category });
+    }
+
+    if (filters?.minPrice) {
+      query.andWhere('product.currentPrice >= :minPrice', { minPrice: filters.minPrice });
+    }
+
+    if (filters?.maxPrice) {
+      query.andWhere('product.currentPrice <= :maxPrice', { maxPrice: filters.maxPrice });
+    }
+
+    if (filters?.search) {
+      query.andWhere('product.name ILIKE :search', { search: `%${filters.search}%` });
+    }
+
+    const sortBy = filters?.sortBy || 'newest';
+    switch (sortBy) {
+      case 'priceLowHigh':
+        query.orderBy('product.currentPrice', 'ASC');
+        break;
+      case 'priceHighLow':
+        query.orderBy('product.currentPrice', 'DESC');
+        break;
+      case 'popular':
+        query.orderBy('product.reviewsCount', 'DESC');
+        break;
+      case 'rating':
+        query.orderBy('product.rating', 'DESC');
+        break;
+      case 'newest':
+      default:
+        query.orderBy('product.createdAt', 'DESC');
+        break;
+    }
+
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 12;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await query
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      products: products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        category: product.category,
+        originalPrice: product.originalPrice ? parseFloat(product.originalPrice.toString()) : undefined,
+        currentPrice: parseFloat(product.currentPrice.toString()),
+        imageUrl: product.imageUrl,
+        rating: parseFloat(product.rating.toString()),
+        reviewsCount: product.reviewsCount,
+        isSpecial: product.isSpecial,
+        shippingFree: product.shippingFree,
+        isActive: product.isActive,
+      })),
+      total,
+    };
   }
 
   async getProductById(id: string): Promise<ProductDto> {
@@ -54,14 +113,30 @@ export class ProductsService {
       id: product.id,
       name: product.name,
       description: product.description,
-      basePrice: parseFloat(product.basePrice.toString()),
+      originalPrice: product.originalPrice ? parseFloat(product.originalPrice.toString()) : undefined,
+      currentPrice: parseFloat(product.currentPrice.toString()),
       category: product.category,
       imageUrl: product.imageUrl,
+      images: product.images,
+      rating: parseFloat(product.rating.toString()),
+      reviewsCount: product.reviewsCount,
+      isSpecial: product.isSpecial,
+      shippingFree: product.shippingFree,
       isActive: product.isActive,
       createdAt: product.createdAt,
       sizes,
       frameOptions: frames,
     };
+  }
+
+  async getCategories(): Promise<string[]> {
+    const categories = await this.productRepository
+      .createQueryBuilder('product')
+      .select('DISTINCT product.category', 'category')
+      .where('product.isActive = :isActive', { isActive: true })
+      .getRawMany();
+
+    return categories.map(c => c.category);
   }
 
   async getTemplates(): Promise<TemplateDto[]> {
