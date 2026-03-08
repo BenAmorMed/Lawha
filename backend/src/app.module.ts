@@ -15,6 +15,7 @@ import { EmailModule } from './email/email.module';
 import { PrintModule } from './print/print.module';
 import { AdminModule } from './admin/admin.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { DesignsModule } from './designs/designs.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     PrintModule,
     AdminModule,
     ReviewsModule,
+    DesignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

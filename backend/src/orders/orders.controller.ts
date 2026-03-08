@@ -34,6 +34,37 @@ export class OrdersController {
     return this.ordersService.createOrder(dto, userId);
   }
 
+  @Post('photo-frame')
+  @HttpCode(HttpStatus.CREATED)
+  async createPhotoFrameOrder(
+    @Body() photoFrameDto: any,
+    @Request() req: any,
+  ): Promise<OrderCreatedResponseDto> {
+    const userId = req.user?.id || undefined;
+
+    // Convert photo frame design to regular order format
+    const orderDto: CreateOrderDto = {
+      productSizeId: photoFrameDto.productSizeId,
+      frameOptionId: photoFrameDto.frameOptionId,
+      designJson: {
+        templateId: 'photo-frame-9',
+        layers: photoFrameDto.photos,
+        frameConfig: photoFrameDto.frameConfig,
+        textCustomization: photoFrameDto.textCustomization
+      },
+      previewUrl: photoFrameDto.previewUrl || '',
+      shippingFirstName: photoFrameDto.shippingFirstName,
+      shippingLastName: photoFrameDto.shippingLastName,
+      shippingAddress: photoFrameDto.shippingAddress,
+      shippingCity: photoFrameDto.shippingCity,
+      shippingPostalCode: photoFrameDto.shippingPostalCode,
+      shippingPhone: photoFrameDto.shippingPhone,
+      guestEmail: photoFrameDto.guestEmail,
+    };
+
+    return this.ordersService.createOrder(orderDto, userId);
+  }
+
   @Get('my')
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.OK)

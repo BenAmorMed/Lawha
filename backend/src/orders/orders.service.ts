@@ -40,7 +40,7 @@ export class OrdersService {
       throw new BadRequestException(`Product not found for size: ${dto.productSizeId}`);
     });
 
-    let total = parseFloat(product.basePrice.toString()) + parseFloat(size.priceDelta.toString());
+    let total = parseFloat(product.currentPrice.toString()) + parseFloat(size.priceDelta.toString());
 
     if (dto.frameOptionId) {
       const frame = await this.frameOptionRepository.findOneOrFail({ where: { id: dto.frameOptionId } }).catch(() => {
