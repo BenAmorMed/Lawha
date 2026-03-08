@@ -1,4 +1,4 @@
-import { Controller, Get, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ProductDto, ProductListDto, TemplateDto } from './products.dto';
 
@@ -8,8 +8,30 @@ export class ProductsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getProducts(): Promise<ProductListDto[]> {
-    return this.productsService.getAllProducts();
+  async getProducts(
+    @Query('category') category?: string,
+    @Query('minPrice') minPrice?: number,
+    @Query('maxPrice') maxPrice?: number,
+    @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<{ products: ProductListDto[]; total: number }> {
+    return this.productsService.getAllProducts({
+      category,
+      minPrice,
+      maxPrice,
+      search,
+      sortBy,
+      page,
+      limit,
+    });
+  }
+
+  @Get('categories')
+  @HttpCode(HttpStatus.OK)
+  async getCategories(): Promise<string[]> {
+    return this.productsService.getCategories();
   }
 
   @Get(':id')
