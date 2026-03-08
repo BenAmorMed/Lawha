@@ -85,7 +85,7 @@ export const adminApi = {
   ): Promise<void> => {
     await apiClient.patch(`/admin/orders/${orderId}/status`, {
       status,
-      tracking_number: trackingNumber,
+      trackingNumber,
     });
   },
 
@@ -96,9 +96,9 @@ export const adminApi = {
     trackingNumber?: string,
   ): Promise<{ updated_count: number; status: string }> => {
     const response = await apiClient.post(`/admin/orders/bulk-update`, {
-      order_ids: orderIds,
+      orderIds,
       status,
-      tracking_number: trackingNumber,
+      trackingNumber,
     });
     return response.data;
   },
@@ -117,5 +117,45 @@ export const adminApi = {
   // Reject an order
   rejectOrder: async (orderId: string, reason?: string): Promise<void> => {
     await apiClient.post(`/admin/orders/${orderId}/reject`, { reason });
+  },
+
+  // --- REVIEW MANAGEMENT ---
+
+  // Get all reviews with filters
+  getAllReviews: async (filters?: {
+    productId?: string;
+    userId?: string;
+    rating?: number;
+    limit?: number;
+    offset?: number;
+    sortBy?: 'createdAt' | 'rating' | 'helpfulCount';
+    sortOrder?: 'ASC' | 'DESC';
+  }): Promise<{
+    data: any[];
+    pagination: {
+      total: number;
+      limit: number;
+      offset: number;
+      pages: number;
+    };
+  }> => {
+    const params = new URLSearchParams();
+    if (filters?.productId) params.append('productId', filters.productId);
+    if (filters?.userId) params.append('userId', filters.userId);
+    if (filters?.rating) params.append('rating', filters.rating.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.offset) params.append('offset', filters.offset.toString());
+    if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+
+    const response = await apiClient.get(
+      `/admin/reviews?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  // Delete a review as admin
+  deleteReview: async (reviewId: string): Promise<void> => {
+    await apiClient.delete(`/admin/reviews/${reviewId}`);
   },
 };

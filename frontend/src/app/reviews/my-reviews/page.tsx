@@ -12,8 +12,8 @@ interface UserReview {
   title: string;
   comment: string;
   product: { id: string; name: string };
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function MyReviewsPage() {
@@ -172,11 +172,11 @@ export default function MyReviewsPage() {
                 <p className="text-gray-700 mb-3">{review.comment}</p>
 
                 <div className="text-xs text-gray-600">
-                  Posted on {new Date(review.created_at).toLocaleDateString()} •{' '}
-                  {review.updated_at !== review.created_at && (
+                  Posted on {new Date(review.createdAt).toLocaleDateString()} •{' '}
+                  {review.updatedAt !== review.createdAt && (
                     <>
                       Updated on{' '}
-                      {new Date(review.updated_at).toLocaleDateString()}
+                      {new Date(review.updatedAt).toLocaleDateString()}
                     </>
                   )}
                 </div>

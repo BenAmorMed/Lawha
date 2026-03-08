@@ -197,6 +197,14 @@ export default function OrderDetailPage() {
                   <p className="text-sm text-gray-600">
                     Quantity: {item.quantity}
                   </p>
+                  {order.status === 'delivered' && (
+                    <Link
+                      href={`/products/${item.product_id}/reviews?orderId=${order.id}`}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-2 inline-block"
+                    >
+                      Write a Review
+                    </Link>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-gray-900">

@@ -3,10 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { productsApi, Product, ProductSize, FrameOption } from '@/api/products-api';
+import { reviewsApi } from '@/api/reviews-api';
 import { useEditorStore } from '@/store/editorStore';
 
+interface ProductWithRating extends Product {
+  rating?: {
+    average: number;
+    total: number;
+  };
+}
+
 export default function GalleryPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithRating[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sizes, setSizes] = useState<ProductSize[]>([]);
   const [frames, setFrames] = useState<FrameOption[]>([]);
@@ -23,7 +31,29 @@ export default function GalleryPage() {
       try {
         setLoading(true);
         const data = await productsApi.getProducts();
-        setProducts(data as any as Product[]);
+
+        // Fetch ratings for all products in one go to avoid N+1
+        const productIds = data.map((p: any) => p.id);
+        let allStats: Record<string, { averageRating: number; totalReviews: number }> = {};
+
+        try {
+          allStats = await reviewsApi.getMultipleProductStats(productIds);
+        } catch (err) {
+          console.error('Failed to fetch multiple product stats:', err);
+        }
+
+        const formattedProducts = data.map((p: any) => {
+          const stats = allStats[p.id] || { averageRating: 0, totalReviews: 0 };
+          return {
+            ...p,
+            rating: {
+              average: stats.averageRating,
+              total: stats.totalReviews,
+            },
+          };
+        });
+
+        setProducts(formattedProducts);
         if (data.length > 0) {
           const firstProduct = data[0];
           setSelectedProduct(firstProduct as any as Product);
@@ -147,8 +177,27 @@ export default function GalleryPage() {
 
               {/* Product Info */}
               <div className="p-4">
-                <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
+                <div className="flex justify-between items-start">
+                  <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
+                  {product.rating && product.rating.total > 0 && (
+                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded border border-yellow-100">
+                      <span className="text-yellow-500 text-sm">★</span>
+                      <span className="text-sm font-bold text-yellow-700">
+                        {product.rating.average.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <p className="text-gray-600 text-sm mt-2">{product.description}</p>
+
+                {product.rating && product.rating.total > 0 && (
+                  <Link
+                    href={`/products/${product.id}/reviews`}
+                    className="text-xs text-blue-600 hover:text-blue-700 mt-2 inline-block"
+                  >
+                    View {product.rating.total} reviews
+                  </Link>
+                )}
 
                 {/* Price */}
                 <div className="mt-4 flex items-baseline gap-2">
