@@ -33,7 +33,7 @@ export class PaymentController {
     @CurrentUser() user: User
   ) {
     // Verify order exists and belongs to user
-    const order = await this.ordersService.getOrderById(orderId, user.id);
+    const { order } = await this.ordersService.getOrderById(orderId, user.id);
 
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -69,7 +69,7 @@ export class PaymentController {
     @CurrentUser() user: User
   ) {
     // Verify order exists
-    const order = await this.ordersService.getOrderById(orderId, user.id);
+    const { order } = await this.ordersService.getOrderById(orderId, user.id);
 
     if (!order) {
       throw new NotFoundException('Order not found');

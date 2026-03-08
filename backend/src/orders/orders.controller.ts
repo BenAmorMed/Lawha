@@ -9,10 +9,10 @@ import {
   HttpCode,
   HttpStatus,
   Request,
-  Optional,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OrdersService } from './orders.service';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { CreateOrderDto, OrderCreatedResponseDto } from './dto/create-order.dto';
 
 /**
@@ -24,6 +24,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async createOrder(
     @Body() dto: CreateOrderDto,
@@ -42,6 +43,7 @@ export class OrdersController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getOrder(@Param('id') orderId: string, @Request() req: any): Promise<any> {
     const userId = req.user?.id || undefined;
