@@ -9,6 +9,7 @@ import { Product } from '../products/product.entity';
 import { ProductSize } from '../products/entities/product-size.entity';
 import { FrameOption } from '../products/entities/frame-option.entity';
 import { DataSource } from 'typeorm';
+import { EmailService } from '../email/email.service';
 
 // ── Mocks de base ──────────────────────────────────────────────────────────
 const mockSize = { id: 'size-uuid', productId: 'prod-uuid', priceDelta: 10 };
@@ -69,6 +70,7 @@ describe('OrdersService.createOrder', () => {
                 { provide: getRepositoryToken(ProductSize), useValue: { findOneOrFail: jest.fn(async () => mockSize) } },
                 { provide: getRepositoryToken(FrameOption), useValue: { findOneOrFail: jest.fn(async () => mockFrame) } },
                 { provide: getDataSourceToken(), useValue: mockDataSource },
+                { provide: EmailService, useValue: { sendOrderConfirmation: jest.fn().mockResolvedValue({}) } },
             ],
         }).compile();
 
