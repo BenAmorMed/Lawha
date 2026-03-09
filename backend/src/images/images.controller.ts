@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from './../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from './../auth/optional-jwt-auth.guard';
 import { CurrentUser } from './../auth/current-user.decorator';
 import { User } from './../auth/entities/user.entity';
 import { ImagesService, IFile } from './images.service';
@@ -23,6 +24,7 @@ export class ImagesController {
   constructor(private readonly imagesService: ImagesService) { }
 
   @Post('upload')
+  @UseGuards(OptionalJwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.CREATED)
   async uploadImage(
@@ -37,8 +39,8 @@ export class ImagesController {
     const result = await this.imagesService.uploadImage(
       file,
       user?.id,
-      parseFloat(printWidthCm || '30'),
-      parseFloat(printHeightCm || '40'),
+      widthCm,
+      heightCm,
     );
     return result;
   }
@@ -47,7 +49,7 @@ export class ImagesController {
   @HttpCode(HttpStatus.CREATED)
   async uploadPreview(
     @Body('dataUrl') dataUrl: string,
-  ): Promise<{ previewUrl: string } | null> {
+  ): Promise<{ previewUrl: string }> {
     return this.imagesService.uploadPreview(dataUrl);
   }
 
@@ -59,9 +61,13 @@ export class ImagesController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async getImageMetadata(@Param('id') imageId: string): Promise<ImageMetadataDto> {
-    return this.imagesService.getImageMetadata(imageId);
+  async getImageMetadata(
+    @Param('id') imageId: string,
+    @CurrentUser() user: User | null,
+  ): Promise<ImageMetadataDto> {
+    return this.imagesService.getImageMetadata(imageId, user?.id);
   }
 
   @Delete(':id')

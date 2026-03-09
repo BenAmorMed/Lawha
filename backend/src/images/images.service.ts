@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -66,7 +71,7 @@ export class ImagesService {
     try {
       metadata = await sharp(file.buffer).metadata();
     } catch (err) {
-      throw new Error(`Failed to process image: ${err.message}`);
+      throw new BadRequestException(`Failed to process image: ${err.message}`);
     }
     const widthPx = metadata.width || 0;
     const heightPx = metadata.height || 0;
@@ -127,31 +132,26 @@ export class ImagesService {
     };
   }
 
-  async uploadPreview(dataUrl: string): Promise<{ previewUrl: string } | null> {
-    try {
-      if (!dataUrl.startsWith('data:image/')) {
-        throw new Error('Invalid dataUrl format');
-      }
-
-      const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (!matches || matches.length !== 3) {
-        throw new Error('Invalid base64 string');
-      }
-
-      const mimeType = matches[1];
-      const buffer = Buffer.from(matches[2], 'base64');
-
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(7);
-      const filename = `previews/preview-${timestamp}-${random}.png`;
-
-      const previewUrl = await this.uploadToMinIO(filename, buffer, mimeType);
-
-      return { previewUrl };
-    } catch (error) {
-      console.error('Failed to upload preview', error);
-      return null;
+  async uploadPreview(dataUrl: string): Promise<{ previewUrl: string }> {
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      throw new BadRequestException('Invalid dataUrl format');
     }
+
+    const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      throw new BadRequestException('Invalid base64 string');
+    }
+
+    const mimeType = matches[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(7);
+    const filename = `previews/preview-${timestamp}-${random}.png`;
+
+    const previewUrl = await this.uploadToMinIO(filename, buffer, mimeType);
+
+    return { previewUrl };
   }
 
   async getUserImages(userId: string): Promise<ImageListDto[]> {
@@ -172,13 +172,18 @@ export class ImagesService {
     }));
   }
 
-  async getImageMetadata(imageId: string): Promise<ImageMetadataDto> {
+  async getImageMetadata(imageId: string, userId?: string): Promise<ImageMetadataDto> {
     const image = await this.imageRepository.findOne({
       where: { id: imageId, is_active: true },
     });
 
     if (!image) {
-      throw new Error('Image not found');
+      throw new NotFoundException('Image not found');
+    }
+
+    // Security check: if image is owned by a user, only that user can see metadata
+    if (image.user_id && image.user_id !== userId) {
+      throw new NotFoundException('Image not found');
     }
 
     let printQuality = 'excellent';
@@ -215,7 +220,7 @@ export class ImagesService {
     });
 
     if (!image) {
-      throw new Error('Image not found');
+      throw new NotFoundException('Image not found');
     }
 
     try {
@@ -233,11 +238,11 @@ export class ImagesService {
   private validateFile(file: IFile): void {
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'];
     if (!allowedMimes.includes(file.mimetype)) {
-      throw new Error('Invalid file type. Allowed: JPEG, PNG, WebP, TIFF');
+      throw new BadRequestException('Invalid file type. Allowed: JPEG, PNG, WebP, TIFF');
     }
     const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
-      throw new Error('File size exceeds 50MB limit');
+      throw new BadRequestException('File size exceeds 50MB limit');
     }
   }
 
@@ -281,7 +286,7 @@ export class ImagesService {
       return `${publicEndpoint}/${bucketName}/${filename}`;
     } catch (error) {
       console.error('MinIO upload error:', error);
-      throw new Error(`Failed to upload file to storage: ${error.message}`);
+      throw new InternalServerErrorException(`Failed to upload file to storage: ${error.message}`);
     }
   }
 }
