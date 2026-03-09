@@ -30,6 +30,7 @@ const Header = () => {
             <button
               className="lg:hidden p-2"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -49,13 +50,16 @@ const Header = () => {
 
             {/* Actions */}
             <div className="flex items-center gap-2 md:gap-4">
-              <button className="p-2 text-dark hover:text-primary transition-colors">
+              <button
+                className="p-2 text-dark hover:text-primary transition-colors"
+                aria-label="Search products"
+              >
                 <Search size={20} />
               </button>
-              <Link href="/login" className="p-2 text-dark hover:text-primary transition-colors hidden sm:block">
+              <Link href="/login" className="p-2 text-dark hover:text-primary transition-colors hidden sm:block" aria-label="Account">
                 <User size={20} />
               </Link>
-              <Link href="/checkout" className="p-2 text-dark hover:text-primary transition-colors relative">
+              <Link href="/checkout" className="p-2 text-dark hover:text-primary transition-colors relative" aria-label="Shopping cart">
                 <ShoppingCart size={20} />
                 <span className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
                   0
