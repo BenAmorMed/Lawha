@@ -109,7 +109,7 @@ export class ReviewsService {
 
     const [reviews, total] = await query.getManyAndCount();
 
-    // Calculate product rating average
+    // Calculate global product rating average and total count in a single query
     const ratingQuery = await this.reviewsRepository
       .createQueryBuilder('review')
       .select('AVG(review.rating)', 'avg_rating')
@@ -261,6 +261,8 @@ export class ReviewsService {
   }
 
   async getProductStats(productId: string) {
+    // Optimization: Perform only ONE database query to get the rating distribution
+    // and derive totalReviews and averageRating in-memory.
     const stats = await this.reviewsRepository
       .createQueryBuilder('review')
       .select('review.rating', 'rating')
@@ -270,26 +272,22 @@ export class ReviewsService {
       .orderBy('review.rating', 'DESC')
       .getRawMany();
 
-    const totalReviews = await this.reviewsRepository.count({
-      where: { productId: productId },
+    let totalReviews = 0;
+    let totalPoints = 0;
+    const distribution = {};
+
+    stats.forEach(item => {
+      const rating = parseInt(item.rating, 10);
+      const count = parseInt(item.count, 10);
+      totalReviews += count;
+      totalPoints += rating * count;
+      distribution[rating] = count;
     });
 
-    const avgRating = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
-
     return {
-      averageRating: parseFloat(avgRating?.avg || 0),
+      averageRating: totalReviews > 0 ? parseFloat((totalPoints / totalReviews).toFixed(2)) : 0,
       totalReviews: totalReviews,
-      ratingDistribution: stats.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.rating]: parseInt(item.count, 10),
-        }),
-        {},
-      ),
+      ratingDistribution: distribution,
     };
   }
 

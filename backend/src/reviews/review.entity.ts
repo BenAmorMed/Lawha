@@ -5,6 +5,7 @@ import {
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../auth/entities/user.entity';
 import { Product } from '../products/product.entity';
@@ -27,12 +28,14 @@ export class Review {
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   user: User;
 
+  @Index()
   @Column('uuid', { nullable: true })
   userId: string;
 
   @ManyToOne(() => Product, { onDelete: 'CASCADE' })
   product: Product;
 
+  @Index()
   @Column('uuid')
   productId: string;
 
