@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus } from './order.entity';
@@ -116,14 +116,22 @@ export class OrdersService {
   }
 
   async getOrderById(orderId: string, userId?: string): Promise<any> {
-    const where: any = { id: orderId };
-    if (userId) where.userId = userId;
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['items'],
+    });
 
-    const order = await this.orderRepository.findOne({ where });
-    if (!order) throw new BadRequestException('Order not found');
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
 
-    const items = await this.orderItemRepository.find({ where: { orderId: orderId } });
-    return { order, items };
+    // Security: If order is associated with a user, only that user (or an admin) can view it.
+    // Note: Admin check is handled by AdminGuard in AdminController which uses its own methods.
+    if (order.userId && order.userId !== userId) {
+      throw new NotFoundException('Order not found'); // Generic message to avoid leaking existence
+    }
+
+    return { order, items: order.items };
   }
 
   async getUserOrders(userId: string): Promise<any[]> {
