@@ -14,13 +14,13 @@ const Footer = () => {
               Create personalized gifts and custom printing products that capture your special moments forever. High quality materials and fast shipping.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 bg-white flex items-center justify-center rounded-full text-primary hover:bg-primary hover:text-white transition-colors shadow-sm">
+              <a href="#" className="w-10 h-10 bg-white flex items-center justify-center rounded-full text-primary hover:bg-primary hover:text-white transition-colors shadow-sm" aria-label="Instagram">
                 <Instagram size={20} />
               </a>
-              <a href="#" className="w-10 h-10 bg-white flex items-center justify-center rounded-full text-primary hover:bg-primary hover:text-white transition-colors shadow-sm">
+              <a href="#" className="w-10 h-10 bg-white flex items-center justify-center rounded-full text-primary hover:bg-primary hover:text-white transition-colors shadow-sm" aria-label="Facebook">
                 <Facebook size={20} />
               </a>
-              <a href="#" className="w-10 h-10 bg-white flex items-center justify-center rounded-full text-primary hover:bg-primary hover:text-white transition-colors shadow-sm">
+              <a href="#" className="w-10 h-10 bg-white flex items-center justify-center rounded-full text-primary hover:bg-primary hover:text-white transition-colors shadow-sm" aria-label="Twitter">
                 <Twitter size={20} />
               </a>
             </div>
@@ -80,11 +80,13 @@ const Footer = () => {
                 type="email"
                 placeholder="Enter your email"
                 className="flex-grow px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                aria-label="Email address for newsletter"
                 required
               />
               <button
                 type="submit"
                 className="bg-primary text-white px-6 py-3 rounded-md font-bold text-sm hover:bg-primary-dark transition-colors"
+                aria-label="Subscribe to newsletter"
               >
                 SUBSCRIBE
               </button>
