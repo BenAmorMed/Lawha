@@ -243,26 +243,19 @@ export class ReviewsService {
       .orderBy('review.rating', 'DESC')
       .getRawMany();
 
-    const totalReviews = await this.reviewsRepository.count({
-      where: { productId: productId },
+    const totalReviews = stats.reduce((acc, item) => acc + parseInt(item.count, 10), 0);
+    const sumRatings = stats.reduce((acc, item) => acc + (parseInt(item.rating) * parseInt(item.count, 10)), 0);
+    const averageRating = totalReviews > 0 ? sumRatings / totalReviews : 0;
+
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    stats.forEach(item => {
+      distribution[item.rating] = parseInt(item.count, 10);
     });
 
-    const avgRating = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
-
     return {
-      average_rating: parseFloat(avgRating?.avg || 0),
+      average_rating: parseFloat(averageRating.toFixed(2)),
       total_reviews: totalReviews,
-      rating_distribution: stats.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.rating]: parseInt(item.count, 10),
-        }),
-        {},
-      ),
+      rating_distribution: distribution,
     };
   }
 
