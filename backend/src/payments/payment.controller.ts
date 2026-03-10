@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { OrdersService } from '../orders/orders.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { User } from '../auth/entities/user.entity';
 
@@ -26,26 +26,30 @@ export class PaymentController {
    * POST /api/v1/payments/create-intent
    */
   @Post('create-intent')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   async createPaymentIntent(
     @Body('orderId') orderId: string,
-    @Body('amount') amount: number,
-    @CurrentUser() user: User
+    @Body('amount') _amount: number, // Ignore user-provided amount for security
+    @CurrentUser() user: User | null
   ) {
-    // Verify order exists and belongs to user
-    const { order } = await this.ordersService.getOrderById(orderId, user.id);
+    // Verify order exists and belongs to user (or is a guest order)
+    const { order } = await this.ordersService.getOrderById(orderId, user?.id);
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.userId !== user.id) {
+    // Explicit ownership check: if order is registered to a user, it must match current user
+    if (order.userId && order.userId !== user?.id) {
       throw new BadRequestException('Order does not belong to this user');
     }
 
+    // Security check: Use the actual order total from the database instead of user-provided amount
+    const secureAmount = order.total;
+
     // Create Stripe payment intent
     const paymentIntent = await this.paymentService.createPaymentIntent(
-      amount,
+      secureAmount,
       orderId,
       'usd'
     );
@@ -62,20 +66,21 @@ export class PaymentController {
    * POST /api/v1/payments/confirm
    */
   @Post('confirm')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   async confirmPayment(
     @Body('paymentIntentId') paymentIntentId: string,
     @Body('orderId') orderId: string,
-    @CurrentUser() user: User
+    @CurrentUser() user: User | null
   ) {
-    // Verify order exists
-    const { order } = await this.ordersService.getOrderById(orderId, user.id);
+    // Verify order exists and belongs to user (or is a guest order)
+    const { order } = await this.ordersService.getOrderById(orderId, user?.id);
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.userId !== user.id) {
+    // Explicit ownership check: if order is registered to a user, it must match current user
+    if (order.userId && order.userId !== user?.id) {
       throw new BadRequestException('Order does not belong to this user');
     }
 
@@ -83,6 +88,12 @@ export class PaymentController {
     const paymentIntent = await this.paymentService.confirmPaymentIntent(
       paymentIntentId
     );
+
+    // Security check: Verify that the payment intent amount matches the order total
+    const expectedAmountCents = Math.round(order.total * 100);
+    if (paymentIntent.amount !== expectedAmountCents) {
+      throw new BadRequestException('Payment amount mismatch');
+    }
 
     // Check payment status
     if (paymentIntent.status === 'succeeded') {
