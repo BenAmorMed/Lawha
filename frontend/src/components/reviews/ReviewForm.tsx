@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import { Star } from 'lucide-react';
 
 interface ReviewFormProps {
   productId: string;
@@ -52,7 +53,8 @@ export default function ReviewForm({
       onSuccess();
     } catch (err: any) {
       setError(
-        err.response?.data?.message || 'Failed to submit review. Please try again.'
+        err.response?.data?.message ||
+          'Failed to submit review. Please try again.'
       );
       console.error('Review submit error:', err);
     } finally {
@@ -75,7 +77,10 @@ export default function ReviewForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg p-6 border border-gray-200">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white rounded-lg p-6 border border-gray-200"
+    >
       <h3 className="text-lg font-bold text-gray-900 mb-4">Share Your Review</h3>
 
       {error && (
@@ -95,11 +100,17 @@ export default function ReviewForm({
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              aria-label={`Rate ${star} out of 5 stars`}
+              className={`transition-all duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full p-1`}
             >
-              ★
+              <Star
+                size={32}
+                className={`${
+                  star <= rating
+                    ? 'fill-star text-star'
+                    : 'fill-gray-100 text-gray-300'
+                }`}
+              />
             </button>
           ))}
         </div>
