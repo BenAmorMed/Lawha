@@ -118,16 +118,22 @@ export class ReviewsService {
       .getRawOne();
 
     return {
-      reviews: reviews.map((review) => ({
-        id: review.id,
-        rating: review.rating,
-        title: review.title,
-        comment: review.comment,
-        userEmail: review.user?.email,
-        verifiedPurchase: review.verifiedPurchase,
-        helpfulCount: review.helpfulCount,
-        createdAt: review.createdAt,
-      })),
+      reviews: reviews.map((review) => {
+        const email = review.user?.email || '';
+        const [localPart, domain] = email.split('@');
+        const maskedEmail = localPart ? `${localPart.charAt(0)}***@${domain}` : 'Anonymous';
+
+        return {
+          id: review.id,
+          rating: review.rating,
+          title: review.title,
+          comment: review.comment,
+          userEmail: review.user?.fullName || maskedEmail,
+          verifiedPurchase: review.verifiedPurchase,
+          helpfulCount: review.helpfulCount,
+          createdAt: review.createdAt,
+        };
+      }),
       pagination: {
         total,
         limit,
@@ -187,7 +193,7 @@ export class ReviewsService {
 
     // Verify ownership
     if (review.userId !== userId) {
-      throw new BadRequestException('You can only edit your own reviews');
+      throw new NotFoundException(`Review ${reviewId} not found`);
     }
 
     Object.assign(review, updateReviewDto);
@@ -206,7 +212,7 @@ export class ReviewsService {
 
     // Verify ownership
     if (review.userId !== userId) {
-      throw new BadRequestException('You can only delete your own reviews');
+      throw new NotFoundException(`Review ${reviewId} not found`);
     }
 
     await this.reviewsRepository.delete(reviewId);
