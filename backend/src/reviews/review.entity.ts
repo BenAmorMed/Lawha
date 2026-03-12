@@ -16,6 +16,7 @@ export class Review {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @Column('integer')
   rating: number; // 1-5 stars
 
