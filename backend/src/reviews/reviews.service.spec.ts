@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 describe('ReviewsService', () => {
   let service: ReviewsService;
   let reviewsRepository: Repository<Review>;
+  let productsRepository: Repository<Product>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -21,21 +22,32 @@ describe('ReviewsService', () => {
             getManyAndCount: jest.fn(),
             getRawOne: jest.fn(),
             getRawMany: jest.fn(),
+            save: jest.fn(),
+            create: jest.fn(),
+            findOne: jest.fn(),
+            delete: jest.fn(),
           },
         },
         {
           provide: getRepositoryToken(Product),
-          useValue: {},
+          useValue: {
+            findOne: jest.fn(),
+            update: jest.fn(),
+            find: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Order),
-          useValue: {},
+          useValue: {
+            findOne: jest.fn(),
+          },
         },
       ],
     }).compile();
 
     service = module.get<ReviewsService>(ReviewsService);
     reviewsRepository = module.get<Repository<Review>>(getRepositoryToken(Review));
+    productsRepository = module.get<Repository<Product>>(getRepositoryToken(Product));
   });
 
   describe('getProductStats', () => {
@@ -84,11 +96,12 @@ describe('ReviewsService', () => {
   });
 
   describe('getProductReviews', () => {
-    it('should return reviews and correct total from getManyAndCount', async () => {
+    it('should return reviews and correct stats from productsRepository', async () => {
       const mockReviews = [
         { id: '1', rating: 5, title: 'Good', comment: 'Nice', user: { email: 'test@example.com' } },
       ];
       const mockTotal = 1;
+      const mockProduct = { id: 'product-1', rating: 5, reviewsCount: 1 };
 
       const queryBuilder: any = {
         where: jest.fn().mockReturnThis(),
@@ -99,16 +112,8 @@ describe('ReviewsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
       };
 
-      const ratingQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '5', total_reviews: '1' }),
-      };
-
-      jest.spyOn(reviewsRepository, 'createQueryBuilder')
-        .mockReturnValueOnce(queryBuilder)
-        .mockReturnValueOnce(ratingQueryBuilder);
+      jest.spyOn(reviewsRepository, 'createQueryBuilder').mockReturnValue(queryBuilder);
+      jest.spyOn(productsRepository, 'findOne').mockResolvedValue(mockProduct as any);
 
       const result = await service.getProductReviews('product-1');
 
@@ -116,6 +121,55 @@ describe('ReviewsService', () => {
       expect(result.productRating.total).toBe(1);
       expect(result.productRating.average).toBe(5);
       expect(result.reviews[0].id).toBe('1');
+      expect(productsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'product-1' },
+        select: ['rating', 'reviewsCount'],
+      });
+    });
+  });
+
+  describe('updateProductStats', () => {
+    it('should update product with calculated stats from reviews', async () => {
+      const mockStats = { averageRating: '4.5', totalReviews: '10' };
+      const queryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue(mockStats),
+      };
+
+      jest.spyOn(reviewsRepository, 'createQueryBuilder').mockReturnValue(queryBuilder);
+      jest.spyOn(productsRepository, 'update').mockResolvedValue({} as any);
+
+      // updateProductStats is private, so we access it via any
+      await (service as any).updateProductStats('product-1');
+
+      expect(reviewsRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(productsRepository.update).toHaveBeenCalledWith('product-1', {
+        rating: 4.5,
+        reviewsCount: 10,
+      });
+    });
+  });
+
+  describe('createReview', () => {
+    it('should trigger updateProductStats after saving review', async () => {
+      const createReviewDto = { productId: 'p1', rating: 5, title: 'T', comment: 'C' };
+      const mockProduct = { id: 'p1' };
+      const mockReview = { id: 'r1', productId: 'p1' };
+
+      jest.spyOn(productsRepository, 'findOne').mockResolvedValue(mockProduct as any);
+      jest.spyOn(reviewsRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(reviewsRepository, 'create').mockReturnValue(mockReview as any);
+      jest.spyOn(reviewsRepository, 'save').mockResolvedValue(mockReview as any);
+
+      // Mock private method
+      const updateStatsSpy = jest.spyOn(service as any, 'updateProductStats').mockResolvedValue(undefined);
+
+      await service.createReview('user1', createReviewDto);
+
+      expect(reviewsRepository.save).toHaveBeenCalled();
+      expect(updateStatsSpy).toHaveBeenCalledWith('p1');
     });
   });
 });
