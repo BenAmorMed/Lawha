@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { Review } from './review.entity';
 import { Product } from '../products/product.entity';
@@ -116,6 +117,71 @@ describe('ReviewsService', () => {
       expect(result.productRating.total).toBe(1);
       expect(result.productRating.average).toBe(5);
       expect(result.reviews[0].id).toBe('1');
+    });
+
+    it('should return fullName if available, otherwise masked email', async () => {
+      const mockReviews = [
+        {
+          id: '1',
+          rating: 5,
+          title: 'Good',
+          comment: 'Nice',
+          user: { email: 'john.doe@example.com', fullName: 'John Doe' },
+        },
+        {
+          id: '2',
+          rating: 4,
+          title: 'Okay',
+          comment: 'Not bad',
+          user: { email: 'jane.smith@example.com', fullName: null },
+        },
+      ];
+      const mockTotal = 2;
+
+      const queryBuilder: any = {
+        where: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
+      };
+
+      const ratingQueryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '4.5', total_reviews: '2' }),
+      };
+
+      jest.spyOn(reviewsRepository, 'createQueryBuilder')
+        .mockReturnValueOnce(queryBuilder)
+        .mockReturnValueOnce(ratingQueryBuilder);
+
+      const result = await service.getProductReviews('product-1');
+
+      expect(result.reviews[0].userEmail).toBe('John Doe');
+      expect(result.reviews[1].userEmail).toBe('j***@example.com');
+    });
+  });
+
+  describe('updateReview and deleteReview ownership', () => {
+    it('updateReview should throw NotFoundException if user is not the owner', async () => {
+      const mockReview = { id: 'rev-1', userId: 'user-1' } as Review;
+      jest.spyOn(service, 'getReviewById').mockResolvedValue(mockReview);
+
+      await expect(service.updateReview('rev-1', 'user-2', {})).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('deleteReview should throw NotFoundException if user is not the owner', async () => {
+      const mockReview = { id: 'rev-1', userId: 'user-1' } as Review;
+      jest.spyOn(service, 'getReviewById').mockResolvedValue(mockReview);
+
+      await expect(service.deleteReview('rev-1', 'user-2')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
