@@ -78,6 +78,9 @@ export class ReviewsService {
 
     await this.reviewsRepository.save(review);
 
+    // Sync product stats
+    await this.updateProductStats(productId);
+
     this.logger.log(
       `Review created by user ${userId} for product ${productId}`,
       ReviewsService.name,
@@ -86,12 +89,30 @@ export class ReviewsService {
     return review;
   }
 
+  /**
+   * Internal helper to sync product rating and count aggregates.
+   * This denormalization improves read performance for product listings.
+   */
+  private async updateProductStats(productId: string): Promise<void> {
+    try {
+      const stats = await this.getProductStats(productId);
+      await this.productsRepository.update(productId, {
+        rating: stats.averageRating,
+        reviewsCount: stats.totalReviews,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to update product stats for ${productId}: ${error.message}`);
+    }
+  }
+
   async getProductReviews(
     productId: string,
     limit: number = 10,
     offset: number = 0,
     sortBy: 'helpful' | 'recent' | 'rating' = 'recent',
   ) {
+    // Optimization: Fetch product alongside reviews to get denormalized rating,
+    // and use the total from getManyAndCount() to avoid a second COUNT query.
     const query = this.reviewsRepository
       .createQueryBuilder('review')
       .where('review.productId = :productId', { productId })
@@ -109,13 +130,11 @@ export class ReviewsService {
 
     const [reviews, total] = await query.getManyAndCount();
 
-    // Calculate global product rating average and total count in a single query
-    const ratingQuery = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg_rating')
-      .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
+    // Get the product's denormalized average rating
+    const product = await this.productsRepository.findOne({
+      where: { id: productId },
+      select: ['rating'],
+    });
 
     return {
       reviews: reviews.map((review) => ({
@@ -135,8 +154,8 @@ export class ReviewsService {
         pages: Math.ceil(Number(total) / limit),
       },
       productRating: {
-        average: parseFloat(ratingQuery?.avg_rating || 0),
-        total: parseInt(ratingQuery?.total_reviews || 0, 10),
+        average: parseFloat(product?.rating?.toString() || '0'),
+        total: Number(total),
       },
     };
   }
@@ -193,6 +212,9 @@ export class ReviewsService {
     Object.assign(review, updateReviewDto);
     await this.reviewsRepository.save(review);
 
+    // Sync product stats
+    await this.updateProductStats(review.productId);
+
     this.logger.log(
       `Review ${reviewId} updated by user ${userId}`,
       ReviewsService.name,
@@ -210,6 +232,9 @@ export class ReviewsService {
     }
 
     await this.reviewsRepository.delete(reviewId);
+
+    // Sync product stats
+    await this.updateProductStats(review.productId);
 
     this.logger.log(
       `Review ${reviewId} deleted by user ${userId}`,

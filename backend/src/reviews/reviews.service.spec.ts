@@ -9,9 +9,10 @@ import { Repository } from 'typeorm';
 describe('ReviewsService', () => {
   let service: ReviewsService;
   let reviewsRepository: Repository<Review>;
+  let module: TestingModule;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         ReviewsService,
         {
@@ -25,7 +26,10 @@ describe('ReviewsService', () => {
         },
         {
           provide: getRepositoryToken(Product),
-          useValue: {},
+          useValue: {
+            findOne: jest.fn(),
+            update: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Order),
@@ -89,6 +93,7 @@ describe('ReviewsService', () => {
         { id: '1', rating: 5, title: 'Good', comment: 'Nice', user: { email: 'test@example.com' } },
       ];
       const mockTotal = 1;
+      const productRepository = module.get<Repository<Product>>(getRepositoryToken(Product));
 
       const queryBuilder: any = {
         where: jest.fn().mockReturnThis(),
@@ -99,16 +104,8 @@ describe('ReviewsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
       };
 
-      const ratingQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '5', total_reviews: '1' }),
-      };
-
-      jest.spyOn(reviewsRepository, 'createQueryBuilder')
-        .mockReturnValueOnce(queryBuilder)
-        .mockReturnValueOnce(ratingQueryBuilder);
+      jest.spyOn(reviewsRepository, 'createQueryBuilder').mockReturnValue(queryBuilder);
+      jest.spyOn(productRepository, 'findOne').mockResolvedValue({ rating: 5 } as any);
 
       const result = await service.getProductReviews('product-1');
 
@@ -116,6 +113,10 @@ describe('ReviewsService', () => {
       expect(result.productRating.total).toBe(1);
       expect(result.productRating.average).toBe(5);
       expect(result.reviews[0].id).toBe('1');
+      expect(productRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'product-1' },
+        select: ['rating'],
+      });
     });
   });
 });
