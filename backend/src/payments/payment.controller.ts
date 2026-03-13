@@ -29,7 +29,6 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   async createPaymentIntent(
     @Body('orderId') orderId: string,
-    @Body('amount') amount: number,
     @CurrentUser() user: User
   ) {
     // Verify order exists and belongs to user
@@ -43,9 +42,13 @@ export class PaymentController {
       throw new BadRequestException('Order does not belong to this user');
     }
 
+    // Security: Always use the amount from our trusted database, NOT from the client request.
+    // This prevents price manipulation vulnerabilities.
+    const paymentAmount = parseFloat(order.total.toString());
+
     // Create Stripe payment intent
     const paymentIntent = await this.paymentService.createPaymentIntent(
-      amount,
+      paymentAmount,
       orderId,
       'usd'
     );
@@ -83,6 +86,12 @@ export class PaymentController {
     const paymentIntent = await this.paymentService.confirmPaymentIntent(
       paymentIntentId
     );
+
+    // Security check: Ensure the payment intent actually belongs to this order
+    // to prevent cross-order payment confirmation attacks.
+    if (paymentIntent.metadata.orderId !== orderId) {
+      throw new BadRequestException('Payment intent does not match order ID');
+    }
 
     // Check payment status
     if (paymentIntent.status === 'succeeded') {
