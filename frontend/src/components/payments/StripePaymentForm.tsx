@@ -38,7 +38,7 @@ const StripeCheckoutForm: React.FC<StripePaymentFormProps> = ({
   useEffect(() => {
     const createIntent = async () => {
       try {
-        const data = await paymentsApi.createPaymentIntent(orderId, amount);
+        const data = await paymentsApi.createPaymentIntent(orderId);
         setClientSecret(data.clientSecret);
       } catch (err: any) {
         onError(err.response?.data?.message || 'Failed to create payment intent');
@@ -46,7 +46,7 @@ const StripeCheckoutForm: React.FC<StripePaymentFormProps> = ({
     };
 
     createIntent();
-  }, [orderId, amount, onError]);
+  }, [orderId, onError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
