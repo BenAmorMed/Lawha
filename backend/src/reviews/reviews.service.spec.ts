@@ -83,6 +83,35 @@ describe('ReviewsService', () => {
     });
   });
 
+  describe('updateProductStats', () => {
+    it('should update product with new stats', async () => {
+      const productId = 'product-1';
+      const mockStats = [
+        { rating: '5', count: '10' },
+      ];
+
+      const queryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(mockStats),
+      };
+
+      jest.spyOn(reviewsRepository, 'createQueryBuilder').mockReturnValue(queryBuilder);
+      const productRepo = (service as any).productsRepository;
+      productRepo.update = jest.fn().mockResolvedValue({ affected: 1 });
+
+      await (service as any).updateProductStats(productId);
+
+      expect(productRepo.update).toHaveBeenCalledWith(productId, {
+        rating: 5,
+        reviewsCount: 10,
+      });
+    });
+  });
+
   describe('getProductReviews', () => {
     it('should return reviews and correct total from getManyAndCount', async () => {
       const mockReviews = [
@@ -99,16 +128,11 @@ describe('ReviewsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
       };
 
-      const ratingQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '5', total_reviews: '1' }),
-      };
+      const productRepo = (service as any).productsRepository;
+      productRepo.findOne = jest.fn().mockResolvedValue({ rating: 5 });
 
       jest.spyOn(reviewsRepository, 'createQueryBuilder')
-        .mockReturnValueOnce(queryBuilder)
-        .mockReturnValueOnce(ratingQueryBuilder);
+        .mockReturnValueOnce(queryBuilder);
 
       const result = await service.getProductReviews('product-1');
 
