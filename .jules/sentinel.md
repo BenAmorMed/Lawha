@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-03-15 - [Price Manipulation in Payment Intent]
+**Vulnerability:** The `POST /api/v1/payments/create-intent` endpoint accepted the `amount` from the request body, allowing malicious users to pay any amount they wanted regardless of the actual order total.
+**Learning:** Never trust client-side input for sensitive financial or business logic calculations. Even if the frontend is correct, the API is exposed and can be called independently.
+**Prevention:** Derive sensitive values (prices, quantities, discounts) exclusively from the database using a trusted identifier (like `orderId`). Remove unnecessary sensitive fields from API request DTOs.

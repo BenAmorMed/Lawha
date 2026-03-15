@@ -29,7 +29,6 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   async createPaymentIntent(
     @Body('orderId') orderId: string,
-    @Body('amount') amount: number,
     @CurrentUser() user: User
   ) {
     // Verify order exists and belongs to user
@@ -39,9 +38,14 @@ export class PaymentController {
       throw new NotFoundException('Order not found');
     }
 
+    // Verify ownership
     if (order.userId !== user.id) {
       throw new BadRequestException('Order does not belong to this user');
     }
+
+    // Security: Derive the amount directly from the order in the database (order.total)
+    // to prevent any price manipulation by the client.
+    const amount = order.total;
 
     // Create Stripe payment intent
     const paymentIntent = await this.paymentService.createPaymentIntent(
