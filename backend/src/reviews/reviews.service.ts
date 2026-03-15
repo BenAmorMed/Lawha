@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Review } from './review.entity';
 import { Order } from '../orders/order.entity';
 import { Product } from '../products/product.entity';
@@ -78,6 +78,9 @@ export class ReviewsService {
 
     await this.reviewsRepository.save(review);
 
+    // Update denormalized product stats
+    await this.updateProductStats(productId);
+
     this.logger.log(
       `Review created by user ${userId} for product ${productId}`,
       ReviewsService.name,
@@ -109,13 +112,11 @@ export class ReviewsService {
 
     const [reviews, total] = await query.getManyAndCount();
 
-    // Calculate global product rating average and total count in a single query
-    const ratingQuery = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg_rating')
-      .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
+    // Optimization: Use denormalized rating from Product entity instead of redundant AVG aggregate
+    const product = await this.productsRepository.findOne({
+      where: { id: productId },
+      select: ['rating'],
+    });
 
     return {
       reviews: reviews.map((review) => ({
@@ -135,8 +136,8 @@ export class ReviewsService {
         pages: Math.ceil(Number(total) / limit),
       },
       productRating: {
-        average: parseFloat(ratingQuery?.avg_rating || 0),
-        total: parseInt(ratingQuery?.total_reviews || 0, 10),
+        average: product ? parseFloat(product.rating.toString()) : 0,
+        total: total,
       },
     };
   }
@@ -193,6 +194,9 @@ export class ReviewsService {
     Object.assign(review, updateReviewDto);
     await this.reviewsRepository.save(review);
 
+    // Update denormalized product stats
+    await this.updateProductStats(review.productId);
+
     this.logger.log(
       `Review ${reviewId} updated by user ${userId}`,
       ReviewsService.name,
@@ -209,7 +213,11 @@ export class ReviewsService {
       throw new BadRequestException('You can only delete your own reviews');
     }
 
+    const productId = review.productId;
     await this.reviewsRepository.delete(reviewId);
+
+    // Update denormalized product stats
+    await this.updateProductStats(productId);
 
     this.logger.log(
       `Review ${reviewId} deleted by user ${userId}`,
@@ -234,14 +242,11 @@ export class ReviewsService {
   }
 
   async getMultipleProductStats(productIds: string[]) {
-    const stats = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('review.productId', 'productId')
-      .addSelect('AVG(review.rating)', 'averageRating')
-      .addSelect('COUNT(review.id)', 'totalReviews')
-      .where('review.productId IN (:...productIds)', { productIds })
-      .groupBy('review.productId')
-      .getRawMany();
+    // Optimization: Use denormalized data from Product entity instead of expensive GROUP BY on reviews table
+    const products = await this.productsRepository.find({
+      where: { id: In(productIds) },
+      select: ['id', 'rating', 'reviewsCount'],
+    });
 
     const results: Record<string, { averageRating: number; totalReviews: number }> = {};
 
@@ -250,14 +255,27 @@ export class ReviewsService {
       results[id] = { averageRating: 0, totalReviews: 0 };
     });
 
-    stats.forEach(item => {
-      results[item.productId] = {
-        averageRating: parseFloat(item.averageRating || 0),
-        totalReviews: parseInt(item.totalReviews || 0, 10),
+    products.forEach(product => {
+      results[product.id] = {
+        averageRating: parseFloat(product.rating.toString()),
+        totalReviews: product.reviewsCount,
       };
     });
 
     return results;
+  }
+
+  private async updateProductStats(productId: string): Promise<void> {
+    const stats = await this.getProductStats(productId);
+
+    await this.productsRepository.update(productId, {
+      rating: stats.averageRating,
+      reviewsCount: stats.totalReviews,
+    });
+
+    this.logger.debug(
+      `Updated product stats for ${productId}: rating=${stats.averageRating}, count=${stats.totalReviews}`,
+    );
   }
 
   async getProductStats(productId: string) {
