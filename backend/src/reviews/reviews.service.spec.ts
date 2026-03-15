@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 describe('ReviewsService', () => {
   let service: ReviewsService;
   let reviewsRepository: Repository<Review>;
+  let productsRepository: Repository<Product>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -21,11 +22,16 @@ describe('ReviewsService', () => {
             getManyAndCount: jest.fn(),
             getRawOne: jest.fn(),
             getRawMany: jest.fn(),
+            find: jest.fn(),
           },
         },
         {
           provide: getRepositoryToken(Product),
-          useValue: {},
+          useValue: {
+            findOne: jest.fn(),
+            find: jest.fn(),
+            update: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Order),
@@ -36,6 +42,7 @@ describe('ReviewsService', () => {
 
     service = module.get<ReviewsService>(ReviewsService);
     reviewsRepository = module.get<Repository<Review>>(getRepositoryToken(Review));
+    productsRepository = module.get<Repository<Product>>(getRepositoryToken(Product));
   });
 
   describe('getProductStats', () => {
@@ -84,7 +91,7 @@ describe('ReviewsService', () => {
   });
 
   describe('getProductReviews', () => {
-    it('should return reviews and correct total from getManyAndCount', async () => {
+    it('should return reviews and use denormalized rating from Product', async () => {
       const mockReviews = [
         { id: '1', rating: 5, title: 'Good', comment: 'Nice', user: { email: 'test@example.com' } },
       ];
@@ -99,16 +106,8 @@ describe('ReviewsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
       };
 
-      const ratingQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '5', total_reviews: '1' }),
-      };
-
-      jest.spyOn(reviewsRepository, 'createQueryBuilder')
-        .mockReturnValueOnce(queryBuilder)
-        .mockReturnValueOnce(ratingQueryBuilder);
+      jest.spyOn(reviewsRepository, 'createQueryBuilder').mockReturnValue(queryBuilder);
+      jest.spyOn(productsRepository, 'findOne').mockResolvedValue({ rating: 5 } as any);
 
       const result = await service.getProductReviews('product-1');
 
@@ -116,6 +115,27 @@ describe('ReviewsService', () => {
       expect(result.productRating.total).toBe(1);
       expect(result.productRating.average).toBe(5);
       expect(result.reviews[0].id).toBe('1');
+      expect(productsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'product-1' },
+        select: ['rating'],
+      });
+    });
+  });
+
+  describe('getMultipleProductStats', () => {
+    it('should use denormalized data from products repository', async () => {
+      const mockProducts = [
+        { id: 'p1', rating: 4.5, reviewsCount: 10 },
+        { id: 'p2', rating: 3.8, reviewsCount: 5 },
+      ];
+
+      jest.spyOn(productsRepository, 'find').mockResolvedValue(mockProducts as any);
+
+      const result = await service.getMultipleProductStats(['p1', 'p2', 'p3']);
+
+      expect(result['p1']).toEqual({ averageRating: 4.5, totalReviews: 10 });
+      expect(result['p2']).toEqual({ averageRating: 3.8, totalReviews: 5 });
+      expect(result['p3']).toEqual({ averageRating: 0, totalReviews: 0 });
     });
   });
 });
