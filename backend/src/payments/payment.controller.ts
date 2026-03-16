@@ -29,7 +29,6 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   async createPaymentIntent(
     @Body('orderId') orderId: string,
-    @Body('amount') amount: number,
     @CurrentUser() user: User
   ) {
     // Verify order exists and belongs to user
@@ -39,9 +38,8 @@ export class PaymentController {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.userId !== user.id) {
-      throw new BadRequestException('Order does not belong to this user');
-    }
+    // Security check: Use the total from the database, never from the client
+    const amount = parseFloat(order.total.toString());
 
     // Create Stripe payment intent
     const paymentIntent = await this.paymentService.createPaymentIntent(
@@ -68,21 +66,23 @@ export class PaymentController {
     @Body('orderId') orderId: string,
     @CurrentUser() user: User
   ) {
-    // Verify order exists
+    // Verify order exists and belongs to user
     const { order } = await this.ordersService.getOrderById(orderId, user.id);
 
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.userId !== user.id) {
-      throw new BadRequestException('Order does not belong to this user');
-    }
-
     // Get payment intent
     const paymentIntent = await this.paymentService.confirmPaymentIntent(
       paymentIntentId
     );
+
+    // Security check: Verify that the payment intent belongs to this order
+    // and was created for the correct amount (already checked by Stripe/metadata)
+    if (paymentIntent.metadata.orderId !== orderId) {
+      throw new BadRequestException('Payment intent does not match order');
+    }
 
     // Check payment status
     if (paymentIntent.status === 'succeeded') {
