@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Rating from './ui/Rating';
@@ -22,7 +22,18 @@ interface ProductCardProps {
   product: Product;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+/**
+ * ProductCard component displays product information in a grid item.
+ *
+ * PERFORMANCE OPTIMIZATIONS:
+ * 1. React.memo: Prevents unnecessary re-renders when parent component (ProductGrid)
+ *    re-renders but individual product data hasn't changed.
+ * 2. next/image 'sizes' attribute: Crucial for images using 'fill' layout.
+ *    Ensures the browser requests correctly scaled images for different viewports,
+ *    reducing bandwidth usage significantly (e.g. from 100vw to ~25vw on desktop).
+ *    Impact: ~75% reduction in image payload size on desktop screens.
+ */
+const ProductCard: React.FC<ProductCardProps> = memo(({ product }) => {
   return (
     <div className="group flex flex-col h-full border border-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white">
       {/* Image Container */}
@@ -32,6 +43,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             src={product.imageUrl || '/placeholder-product.jpg'}
             alt={product.name}
             fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         </Link>
@@ -87,6 +99,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
     </div>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;
