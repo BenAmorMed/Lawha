@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { reviewsApi, Review } from '@/api/reviews-api';
+import Rating from '@/components/ui/Rating';
 
 interface ReviewsListProps {
   productId: string;
@@ -62,21 +63,6 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
     }
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span
-            key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
-          >
-            ★
-          </span>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-8">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
@@ -92,7 +78,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                 </span>
                 <span className="text-gray-600">out of 5</span>
               </div>
-              <div className="mb-2">{renderStars(Math.round(stats.averageRating))}</div>
+              <div className="mb-2">
+                <Rating rating={stats.averageRating} showCount={false} />
+              </div>
               <p className="text-sm text-gray-600">
                 Based on {stats.totalReviews} review
                 {stats.totalReviews !== 1 ? 's' : ''}
@@ -177,7 +165,7 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <div>{renderStars(review.rating)}</div>
+                    <Rating rating={review.rating} showCount={false} />
                     {review.verifiedPurchase && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                         Verified Purchase
