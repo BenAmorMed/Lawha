@@ -78,12 +78,29 @@ export class ReviewsService {
 
     await this.reviewsRepository.save(review);
 
+    // Update product denormalized stats
+    await this.updateProductStats(productId);
+
     this.logger.log(
       `Review created by user ${userId} for product ${productId}`,
       ReviewsService.name,
     );
 
     return review;
+  }
+
+  private async updateProductStats(productId: string): Promise<void> {
+    const stats = await this.reviewsRepository
+      .createQueryBuilder('review')
+      .select('AVG(review.rating)', 'avgRating')
+      .addSelect('COUNT(review.id)', 'reviewsCount')
+      .where('review.productId = :productId', { productId })
+      .getRawOne();
+
+    await this.productsRepository.update(productId, {
+      rating: parseFloat(stats.avgRating || 0),
+      reviewsCount: parseInt(stats.reviewsCount || 0, 10),
+    });
   }
 
   async getProductReviews(
@@ -107,15 +124,17 @@ export class ReviewsService {
       query.orderBy('review.createdAt', 'DESC');
     }
 
-    const [reviews, total] = await query.getManyAndCount();
+    // Optimization: Fetch denormalized rating and reviewsCount from the Product entity
+    // and use getMany() instead of getManyAndCount() to avoid redundant aggregate COUNT query on reviews table.
+    const [reviews, product] = await Promise.all([
+      query.getMany(),
+      this.productsRepository.findOne({
+        where: { id: productId },
+        select: ['rating', 'reviewsCount'],
+      }),
+    ]);
 
-    // Calculate global product rating average and total count in a single query
-    const ratingQuery = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg_rating')
-      .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
+    const total = product?.reviewsCount || 0;
 
     return {
       reviews: reviews.map((review) => ({
@@ -135,8 +154,8 @@ export class ReviewsService {
         pages: Math.ceil(Number(total) / limit),
       },
       productRating: {
-        average: parseFloat(ratingQuery?.avg_rating || 0),
-        total: parseInt(ratingQuery?.total_reviews || 0, 10),
+        average: parseFloat(product?.rating?.toString() || '0'),
+        total: total,
       },
     };
   }
@@ -193,6 +212,9 @@ export class ReviewsService {
     Object.assign(review, updateReviewDto);
     await this.reviewsRepository.save(review);
 
+    // Update product denormalized stats
+    await this.updateProductStats(review.productId);
+
     this.logger.log(
       `Review ${reviewId} updated by user ${userId}`,
       ReviewsService.name,
@@ -210,6 +232,9 @@ export class ReviewsService {
     }
 
     await this.reviewsRepository.delete(reviewId);
+
+    // Update product denormalized stats
+    await this.updateProductStats(review.productId);
 
     this.logger.log(
       `Review ${reviewId} deleted by user ${userId}`,
