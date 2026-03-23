@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Review } from './review.entity';
 import { Order } from '../orders/order.entity';
 import { Product } from '../products/product.entity';
@@ -78,6 +78,9 @@ export class ReviewsService {
 
     await this.reviewsRepository.save(review);
 
+    // Denormalize aggregate stats to Product entity for faster read-paths
+    await this.updateProductStats(productId);
+
     this.logger.log(
       `Review created by user ${userId} for product ${productId}`,
       ReviewsService.name,
@@ -92,30 +95,33 @@ export class ReviewsService {
     offset: number = 0,
     sortBy: 'helpful' | 'recent' | 'rating' = 'recent',
   ) {
-    const query = this.reviewsRepository
-      .createQueryBuilder('review')
-      .where('review.productId = :productId', { productId })
-      .leftJoinAndSelect('review.user', 'user')
-      .skip(offset)
-      .take(limit);
+    // Parallelize reviews fetch and product stats retrieval for better performance
+    const [reviewsResult, product] = await Promise.all([
+      (async () => {
+        const query = this.reviewsRepository
+          .createQueryBuilder('review')
+          .where('review.productId = :productId', { productId })
+          .leftJoinAndSelect('review.user', 'user')
+          .skip(offset)
+          .take(limit);
 
-    if (sortBy === 'helpful') {
-      query.orderBy('review.helpfulCount', 'DESC');
-    } else if (sortBy === 'rating') {
-      query.orderBy('review.rating', 'DESC');
-    } else {
-      query.orderBy('review.createdAt', 'DESC');
-    }
+        if (sortBy === 'helpful') {
+          query.orderBy('review.helpfulCount', 'DESC');
+        } else if (sortBy === 'rating') {
+          query.orderBy('review.rating', 'DESC');
+        } else {
+          query.orderBy('review.createdAt', 'DESC');
+        }
 
-    const [reviews, total] = await query.getManyAndCount();
+        return query.getManyAndCount();
+      })(),
+      this.productsRepository.findOne({
+        where: { id: productId },
+        select: ['rating', 'reviewsCount']
+      })
+    ]);
 
-    // Calculate global product rating average and total count in a single query
-    const ratingQuery = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg_rating')
-      .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
+    const [reviews, total] = reviewsResult;
 
     return {
       reviews: reviews.map((review) => ({
@@ -135,8 +141,9 @@ export class ReviewsService {
         pages: Math.ceil(Number(total) / limit),
       },
       productRating: {
-        average: parseFloat(ratingQuery?.avg_rating || 0),
-        total: parseInt(ratingQuery?.total_reviews || 0, 10),
+        // Use denormalized fields from Product entity instead of aggregate SQL queries
+        average: product ? parseFloat(product.rating.toString()) : 0,
+        total: product ? product.reviewsCount : 0,
       },
     };
   }
@@ -193,6 +200,11 @@ export class ReviewsService {
     Object.assign(review, updateReviewDto);
     await this.reviewsRepository.save(review);
 
+    // Update denormalized stats if rating changed
+    if (updateReviewDto.rating !== undefined) {
+      await this.updateProductStats(review.productId);
+    }
+
     this.logger.log(
       `Review ${reviewId} updated by user ${userId}`,
       ReviewsService.name,
@@ -210,6 +222,9 @@ export class ReviewsService {
     }
 
     await this.reviewsRepository.delete(reviewId);
+
+    // Update denormalized stats
+    await this.updateProductStats(review.productId);
 
     this.logger.log(
       `Review ${reviewId} deleted by user ${userId}`,
@@ -234,14 +249,12 @@ export class ReviewsService {
   }
 
   async getMultipleProductStats(productIds: string[]) {
-    const stats = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('review.productId', 'productId')
-      .addSelect('AVG(review.rating)', 'averageRating')
-      .addSelect('COUNT(review.id)', 'totalReviews')
-      .where('review.productId IN (:...productIds)', { productIds })
-      .groupBy('review.productId')
-      .getRawMany();
+    // Optimization: Batch fetch denormalized stats from Product entity
+    // instead of performing heavy aggregate queries on the reviews table.
+    const products = await this.productsRepository.find({
+      where: { id: In(productIds) },
+      select: ['id', 'rating', 'reviewsCount']
+    });
 
     const results: Record<string, { averageRating: number; totalReviews: number }> = {};
 
@@ -250,10 +263,10 @@ export class ReviewsService {
       results[id] = { averageRating: 0, totalReviews: 0 };
     });
 
-    stats.forEach(item => {
-      results[item.productId] = {
-        averageRating: parseFloat(item.averageRating || 0),
-        totalReviews: parseInt(item.totalReviews || 0, 10),
+    products.forEach(product => {
+      results[product.id] = {
+        averageRating: parseFloat(product.rating.toString() || '0'),
+        totalReviews: product.reviewsCount || 0,
       };
     });
 
@@ -322,5 +335,18 @@ export class ReviewsService {
         pages: Math.ceil(Number(total) / limit),
       },
     };
+  }
+
+  /**
+   * Recalculates and updates product rating and review count
+   * to provide O(1) read-paths for product listings.
+   */
+  private async updateProductStats(productId: string): Promise<void> {
+    const stats = await this.getProductStats(productId);
+
+    await this.productsRepository.update(productId, {
+      rating: stats.averageRating,
+      reviewsCount: stats.totalReviews,
+    });
   }
 }
