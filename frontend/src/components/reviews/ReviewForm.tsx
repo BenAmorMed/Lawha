@@ -95,8 +95,9 @@ export default function ReviewForm({
               key={star}
               type="button"
               onClick={() => setRating(star)}
+              aria-label={`Rate ${star} star${star === 1 ? '' : 's'}`}
               className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
+                star <= rating ? 'text-star' : 'text-gray-300'
               }`}
             >
               ★
