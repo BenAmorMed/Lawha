@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import { Star } from 'lucide-react';
+import Button from '../ui/Button';
 
 interface ReviewFormProps {
   productId: string;
@@ -89,17 +91,23 @@ export default function ReviewForm({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Rating
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="radiogroup" aria-label="Rating">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+              role="radio"
+              aria-checked={star === rating}
+              className={`p-1 transition-all duration-200 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                star <= rating ? 'text-star' : 'text-gray-300'
+              } hover:scale-110`}
             >
-              ★
+              <Star
+                size={32}
+                className={star <= rating ? 'fill-star' : 'fill-transparent'}
+              />
             </button>
           ))}
         </div>
@@ -142,13 +150,13 @@ export default function ReviewForm({
         </p>
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
+        fullWidth
       >
         {loading ? 'Submitting...' : 'Submit Review'}
-      </button>
+      </Button>
     </form>
   );
 }
