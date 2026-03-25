@@ -4,10 +4,11 @@ export const paymentsApi = {
   /**
    * Create a payment intent for an order
    */
-  async createPaymentIntent(orderId: string, amount: number) {
+  async createPaymentIntent(orderId: string, _amount: number) {
+    // Security: The 'amount' is now handled on the backend based on the orderId
+    // to prevent price manipulation. We keep the parameter for compatibility.
     const response = await apiClient.post('/payments/create-intent', {
       orderId,
-      amount,
     });
     return response.data;
   },
