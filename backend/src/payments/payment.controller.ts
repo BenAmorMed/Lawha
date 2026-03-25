@@ -29,8 +29,7 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   async createPaymentIntent(
     @Body('orderId') orderId: string,
-    @Body('amount') amount: number,
-    @CurrentUser() user: User
+    @CurrentUser() user: User,
   ) {
     // Verify order exists and belongs to user
     const { order } = await this.ordersService.getOrderById(orderId, user.id);
@@ -43,11 +42,14 @@ export class PaymentController {
       throw new BadRequestException('Order does not belong to this user');
     }
 
+    // Security: Use amount from database, not from client request
+    const amountToPay = parseFloat(order.total.toString());
+
     // Create Stripe payment intent
     const paymentIntent = await this.paymentService.createPaymentIntent(
-      amount,
+      amountToPay,
       orderId,
-      'usd'
+      'usd',
     );
 
     return {
@@ -81,8 +83,21 @@ export class PaymentController {
 
     // Get payment intent
     const paymentIntent = await this.paymentService.confirmPaymentIntent(
-      paymentIntentId
+      paymentIntentId,
     );
+
+    // Security: Verify that the payment intent actually belongs to this order
+    if (paymentIntent.metadata.orderId !== orderId) {
+      throw new BadRequestException('Payment intent does not match order ID');
+    }
+
+    // Security: Verify that the amount paid matches the order total
+    const expectedAmountCents = Math.round(
+      parseFloat(order.total.toString()) * 100,
+    );
+    if (paymentIntent.amount !== expectedAmountCents) {
+      throw new BadRequestException('Payment amount mismatch');
+    }
 
     // Check payment status
     if (paymentIntent.status === 'succeeded') {

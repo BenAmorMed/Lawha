@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-03-25 - [Price Manipulation and SQL Injection]
+**Vulnerability:** The `PaymentController` trusted the client-provided `amount` for Stripe payments, and the `AdminService` allowed unsanitized `sortBy` fields in database queries.
+**Learning:** Never trust transaction amounts from the client; always derive them from the source of truth (database). Dynamic ordering in TypeORM is a common vector for SQL injection if not whitelisted at runtime.
+**Prevention:** Hardcode whitelists for dynamic query parameters like sort fields and directions. Derive payment amounts exclusively from the database based on the verified resource ID.
