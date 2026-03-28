@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import Rating from '@/components/ui/Rating';
 
 interface UserReview {
   id: string;
@@ -56,21 +57,6 @@ export default function MyReviewsPage() {
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete review');
     }
-  };
-
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span
-            key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
-          >
-            ★
-          </span>
-        ))}
-      </div>
-    );
   };
 
   return (
@@ -148,7 +134,9 @@ export default function MyReviewsPage() {
                     >
                       {review.product.name}
                     </Link>
-                    <div className="mt-2">{renderStars(review.rating)}</div>
+                    <div className="mt-2">
+                      <Rating rating={review.rating} showCount={false} />
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Link
