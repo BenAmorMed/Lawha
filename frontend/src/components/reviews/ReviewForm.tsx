@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import { Star } from 'lucide-react';
+import Button from '../ui/Button';
 
 interface ReviewFormProps {
   productId: string;
@@ -89,29 +91,38 @@ export default function ReviewForm({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Rating
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="radiogroup" aria-label="Rate product">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
+              role="radio"
+              aria-checked={star === rating}
+              aria-label={`${star} star${star !== 1 ? 's' : ''}`}
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              className="transition transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full p-1"
             >
-              ★
+              <Star
+                size={28}
+                className={`${
+                  star <= rating ? 'fill-star text-star' : 'fill-gray-100 text-gray-300'
+                }`}
+              />
             </button>
           ))}
         </div>
-        <p className="text-sm text-gray-600 mt-2">{rating} out of 5 stars</p>
+        <p className="text-sm text-gray-600 mt-2" aria-live="polite">
+          {rating} out of 5 stars selected
+        </p>
       </div>
 
       {/* Title */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="review-title" className="block text-sm font-medium text-gray-700 mb-2">
           Review Title
         </label>
         <input
+          id="review-title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -126,10 +137,11 @@ export default function ReviewForm({
 
       {/* Comment */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="review-comment" className="block text-sm font-medium text-gray-700 mb-2">
           Your Review
         </label>
         <textarea
+          id="review-comment"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder="Share your experience with this product..."
@@ -142,13 +154,20 @@ export default function ReviewForm({
         </p>
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
+        fullWidth
       >
-        {loading ? 'Submitting...' : 'Submit Review'}
-      </button>
+        {loading ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+            Submitting...
+          </>
+        ) : (
+          'Submit Review'
+        )}
+      </Button>
     </form>
   );
 }
