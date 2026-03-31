@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { User } from '../auth/entities/user.entity';
 import { OrderItem } from './order-item.entity';
 
@@ -16,6 +16,8 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // Index for userId to speed up retrieval of orders for a specific user
+  @Index()
   @Column({ name: 'user_id', type: 'uuid', nullable: true })
   userId: string;
 

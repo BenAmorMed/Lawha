@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
 import { ProductSize } from './entities/product-size.entity';
 import { FrameOption } from './entities/frame-option.entity';
@@ -17,9 +17,13 @@ export class Product {
   @Column({ name: 'original_price', type: 'decimal', precision: 10, scale: 2, nullable: true })
   originalPrice: number;
 
+  // Index for price filtering and sorting (e.g., priceLowHigh, priceHighLow)
+  @Index()
   @Column({ name: 'current_price', type: 'decimal', precision: 10, scale: 2 })
   currentPrice: number;
 
+  // Index for category filtering in catalog
+  @Index()
   @Column({ type: 'varchar', length: 100 })
   category: string;
 
@@ -29,12 +33,18 @@ export class Product {
   @Column({ type: 'simple-array', nullable: true })
   images: string[];
 
+  // Index for sorting by top rated products
+  @Index()
   @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
   rating: number;
 
+  // Index for sorting by popularity (reviews count)
+  @Index()
   @Column({ name: 'reviews_count', type: 'int', default: 0 })
   reviewsCount: number;
 
+  // Index for filtering featured/special products
+  @Index()
   @Column({ name: 'is_special', type: 'boolean', default: false })
   isSpecial: boolean;
 
@@ -44,9 +54,13 @@ export class Product {
   @Column({ name: 'stock_quantity', type: 'int', default: 0 })
   stockQuantity: number;
 
+  // Index for filtering active products in public catalog
+  @Index()
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
+  // Index for sorting by newest products
+  @Index()
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
