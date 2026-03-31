@@ -47,10 +47,12 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const { email, password } = loginDto;
 
-    // Find user
-    const user = await this.usersRepository.findOne({
-      where: { email },
-    });
+    // Find user - explicitly select passwordHash since it is hidden by default
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');

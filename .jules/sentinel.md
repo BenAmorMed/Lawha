@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-03-31 - [Credential Leakage via Default Selection]
+**Vulnerability:** The `User` entity lacked `@Exclude()` or `select: false` on the `passwordHash` field, leading to credential leakage when the user relation was joined or queried (e.g., in `ReviewsController` or `OrdersController`).
+**Learning:** Default TypeORM selection behavior can inadvertently expose sensitive fields when entities are joined as relations, even if the primary controller logic is careful.
+**Prevention:** Always use `{ select: false }` in TypeORM column definitions for sensitive data like password hashes or PII. Explicitly use `.addSelect()` in the `AuthService` only during the login flow to verify credentials.
