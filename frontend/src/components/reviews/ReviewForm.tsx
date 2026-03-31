@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import Button from '../ui/Button';
 
 interface ReviewFormProps {
   productId: string;
@@ -86,69 +88,88 @@ export default function ReviewForm({
 
       {/* Rating */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Rating
+        <label id="rating-label" className="block text-sm font-medium text-gray-700 mb-2">
+          Rating <span className="text-red-500">*</span>
         </label>
-        <div className="flex gap-2">
+        <div
+          role="radiogroup"
+          aria-labelledby="rating-label"
+          className="flex gap-2"
+        >
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
+              role="radio"
+              aria-checked={star === rating}
+              aria-label={`${star} star${star > 1 ? 's' : ''}`}
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm transition-transform hover:scale-110"
             >
-              ★
+              <Star
+                size={28}
+                className={`${
+                  star <= rating ? 'fill-star text-star' : 'text-gray-300'
+                }`}
+              />
             </button>
           ))}
         </div>
-        <p className="text-sm text-gray-600 mt-2">{rating} out of 5 stars</p>
+        <p className="text-sm text-gray-600 mt-2" aria-live="polite">
+          {rating} out of 5 stars selected
+        </p>
       </div>
 
       {/* Title */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Review Title
+        <label htmlFor="review-title" className="block text-sm font-medium text-gray-700 mb-2">
+          Review Title <span className="text-red-500">*</span>
         </label>
         <input
+          id="review-title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g., Beautiful quality, fast delivery"
           maxLength={100}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          aria-describedby="title-count"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-shadow"
+          required
         />
-        <p className="text-xs text-gray-600 mt-1">
+        <p id="title-count" className="text-xs text-gray-600 mt-1">
           {title.length}/100 characters
         </p>
       </div>
 
       {/* Comment */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Your Review
+        <label htmlFor="review-comment" className="block text-sm font-medium text-gray-700 mb-2">
+          Your Review <span className="text-red-500">*</span>
         </label>
         <textarea
+          id="review-comment"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder="Share your experience with this product..."
           maxLength={1000}
           rows={5}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          aria-describedby="comment-count"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-shadow"
+          required
         />
-        <p className="text-xs text-gray-600 mt-1">
+        <p id="comment-count" className="text-xs text-gray-600 mt-1">
           {comment.length}/1000 characters
         </p>
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
+        fullWidth
+        isLoading={loading}
       >
         {loading ? 'Submitting...' : 'Submit Review'}
-      </button>
+      </Button>
     </form>
   );
 }
