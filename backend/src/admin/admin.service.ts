@@ -151,43 +151,23 @@ export class AdminService {
   }
 
   async getOrderAnalytics() {
-    // Total orders count
-    const totalOrders = await this.ordersRepository.count();
+    // Optimization: Consolidate 6 database roundtrips into exactly 2 by deriving
+    // summary metrics in-memory from grouped aggregate results.
 
-    // Orders by status
-    const ordersByStatus = await this.ordersRepository
+    // 1. Status-based stats (provides total, revenue, AOV, and breakdown)
+    const statusStats = await this.ordersRepository
       .createQueryBuilder('order')
       .select('order.status', 'status')
       .addSelect('COUNT(order.id)', 'count')
+      .addSelect('SUM(order.total)', 'sum_total')
       .groupBy('order.status')
       .getRawMany();
 
-    // Revenue (total amount from completed orders)
-    const revenue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
-      })
-      .getRawOne();
-
-    // Average order value
-    const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
-      .getRawOne();
-
-    // Recent orders (last 7 days)
+    // 2. Date-based stats (provides recent count and daily breakdown)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const recentOrders = await this.ordersRepository
-      .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .getCount();
-
-    // Orders by day (last 7 days)
-    const ordersByDay = await this.ordersRepository
+    const dailyStats = await this.ordersRepository
       .createQueryBuilder('order')
       .select('DATE(order.createdAt)', 'date')
       .addSelect('COUNT(order.id)', 'count')
@@ -196,21 +176,43 @@ export class AdminService {
       .orderBy('DATE(order.createdAt)', 'ASC')
       .getRawMany();
 
+    // Process status results in-memory
+    let totalOrders = 0;
+    let revenue = 0;
+    let totalValue = 0;
+    const status_breakdown = {};
+
+    statusStats.forEach((item) => {
+      const count = parseInt(item.count, 10);
+      const sum = parseFloat(item.sum_total || 0);
+      const status = item.status;
+
+      totalOrders += count;
+      totalValue += sum;
+      status_breakdown[status] = count;
+
+      // Revenue includes only completed (shipped/delivered) orders
+      if (['shipped', 'delivered'].includes(status)) {
+        revenue += sum;
+      }
+    });
+
+    // Process date results in-memory
+    const orders_last_7_days = dailyStats.reduce(
+      (sum, item) => sum + parseInt(item.count, 10),
+      0,
+    );
+
     return {
       summary: {
         total_orders: totalOrders,
-        revenue: parseFloat(revenue?.total || 0),
-        average_order_value: parseFloat(avgValue?.average || 0),
-        orders_last_7_days: recentOrders,
+        revenue: parseFloat(revenue.toFixed(2)),
+        average_order_value:
+          totalOrders > 0 ? parseFloat((totalValue / totalOrders).toFixed(2)) : 0,
+        orders_last_7_days,
       },
-      status_breakdown: ordersByStatus.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.status]: parseInt(item.count, 10),
-        }),
-        {},
-      ),
-      orders_by_day: ordersByDay.map((item) => ({
+      status_breakdown,
+      orders_by_day: dailyStats.map((item) => ({
         date: item.date,
         count: parseInt(item.count, 10),
       })),
