@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Star } from 'lucide-react';
 
 interface RatingProps {
@@ -7,7 +7,12 @@ interface RatingProps {
   showCount?: boolean;
 }
 
-const Rating: React.FC<RatingProps> = ({ rating, count, showCount = true }) => {
+/**
+ * Rating component that displays stars based on the rating value.
+ * Optimized with React.memo to prevent unnecessary re-renders when
+ * rating or count props haven't changed.
+ */
+const Rating: React.FC<RatingProps> = memo(({ rating, count, showCount = true }) => {
   return (
     <div className="flex items-center gap-1">
       <div className="flex items-center">
@@ -26,6 +31,6 @@ const Rating: React.FC<RatingProps> = ({ rating, count, showCount = true }) => {
       )}
     </div>
   );
-};
+});
 
 export default Rating;

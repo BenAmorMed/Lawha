@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Rating from './ui/Rating';
@@ -22,7 +22,12 @@ interface ProductCardProps {
   product: Product;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+/**
+ * ProductCard component that displays product information.
+ * Memoized with React.memo to prevent unnecessary re-renders in ProductGrid
+ * when product data remains stable.
+ */
+const ProductCard: React.FC<ProductCardProps> = memo(({ product }) => {
   return (
     <div className="group flex flex-col h-full border border-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white">
       {/* Image Container */}
@@ -87,6 +92,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ProductCard;
