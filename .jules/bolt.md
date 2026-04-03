@@ -7,3 +7,7 @@
 ## 2025-05-14 - Redundant Queries in Reviews Module
 **Learning:** The `ReviewsService` was performing multiple database roundtrips for operations that could be optimized into a single query or by reusing existing results. Specifically, `getProductStats` was making 3 queries (distribution, count, average) when the count and average could be calculated in-memory from the distribution. `getProductReviews` was also performing a redundant `COUNT` query despite TypeORM's `getManyAndCount` already providing the total. Additionally, the `reviews` table lacked indexes on `productId` and `userId`.
 **Action:** Consolidate redundant queries and add missing database indexes on high-frequency query paths.
+
+## 2025-05-15 - CanvasEditor Re-render Bottleneck
+**Learning:** The `CanvasEditor` component was subscribing to the entire Zustand store via destructuring, causing the entire canvas to re-render on *any* store update (e.g., UI panel changes). Additionally, individual layers (`ImageElement`, `TextElement`) were re-rendering even when unrelated layers were modified. In Konva, selection is handled by an external `Transformer`, so the `isSelected` prop on layers was unnecessary for their internal rendering and caused all layers to re-render during selection changes.
+**Action:** Use granular selectors for Zustand store and apply `React.memo` to layer components, removing props that trigger unnecessary updates.
