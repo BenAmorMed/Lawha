@@ -18,13 +18,12 @@ export interface CanvasEditorRef {
   getPreviewDataUrl: () => string | null;
 }
 
-// Image component for Konva
-const ImageElement: React.FC<{
+// Image component for Konva - Memoized to prevent re-renders when other layers change
+const ImageElement = React.memo<{
   layer: ImageLayer;
-  isSelected: boolean;
   onSelect: (id: string) => void;
   onUpdate: (id: string, updates: Partial<ImageLayer>) => void;
-}> = ({ layer, isSelected, onSelect, onUpdate }) => {
+}>(({ layer, onSelect, onUpdate }) => {
   const [image, status] = useImage(layer.src, 'anonymous');
 
   useEffect(() => {
@@ -72,15 +71,16 @@ const ImageElement: React.FC<{
       )}
     </Group>
   );
-};
+});
 
-// Text component for Konva
-const TextElement: React.FC<{
+ImageElement.displayName = 'ImageElement';
+
+// Text component for Konva - Memoized to prevent re-renders when other layers change
+const TextElement = React.memo<{
   layer: TextLayer;
-  isSelected: boolean;
   onSelect: (id: string) => void;
   onUpdate: (id: string, updates: Partial<TextLayer>) => void;
-}> = ({ layer, isSelected, onSelect, onUpdate }) => {
+}>(({ layer, onSelect, onUpdate }) => {
   return (
     <Group
       id={layer.id}
@@ -106,7 +106,9 @@ const TextElement: React.FC<{
       />
     </Group>
   );
-};
+});
+
+TextElement.displayName = 'TextElement';
 
 export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((props, ref) => {
   const {
@@ -121,15 +123,14 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
   const transformerRef = useRef<Konva.Transformer>(null);
   const [displayScale, setDisplayScale] = React.useState(1);
 
-  const {
-    layers,
-    selectedLayerId,
-    setSelectedLayer,
-    updateImageLayer,
-    updateTextLayer,
-    addImageLayer,
-    uploadedImages
-  } = useEditorStore();
+  // Performance Optimization: Using granular selectors to avoid re-renders when unrelated store state changes
+  const layers = useEditorStore(state => state.layers);
+  const selectedLayerId = useEditorStore(state => state.selectedLayerId);
+  const setSelectedLayer = useEditorStore(state => state.setSelectedLayer);
+  const updateImageLayer = useEditorStore(state => state.updateImageLayer);
+  const updateTextLayer = useEditorStore(state => state.updateTextLayer);
+  const addImageLayer = useEditorStore(state => state.addImageLayer);
+  const uploadedImages = useEditorStore(state => state.uploadedImages);
 
   // Re-calculate scale to fit container
   useEffect(() => {
@@ -226,7 +227,6 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
                   <ImageElement
                     key={layer.id}
                     layer={layer}
-                    isSelected={layer.id === selectedLayerId}
                     onSelect={setSelectedLayer}
                     onUpdate={updateImageLayer}
                   />
@@ -236,7 +236,6 @@ export const CanvasEditor = forwardRef<CanvasEditorRef, CanvasEditorProps>((prop
                   <TextElement
                     key={layer.id}
                     layer={layer}
-                    isSelected={layer.id === selectedLayerId}
                     onSelect={setSelectedLayer}
                     onUpdate={updateTextLayer}
                   />
