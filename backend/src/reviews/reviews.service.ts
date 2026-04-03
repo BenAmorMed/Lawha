@@ -99,13 +99,13 @@ export class ReviewsService {
       .skip(offset)
       .take(limit);
 
-    if (sortBy === 'helpful') {
-      query.orderBy('review.helpfulCount', 'DESC');
-    } else if (sortBy === 'rating') {
-      query.orderBy('review.rating', 'DESC');
-    } else {
-      query.orderBy('review.createdAt', 'DESC');
-    }
+    const allowedSortBy = {
+      helpful: 'review.helpfulCount',
+      rating: 'review.rating',
+      recent: 'review.createdAt',
+    };
+    const safeSortBy = allowedSortBy[sortBy] || 'review.createdAt';
+    query.orderBy(safeSortBy, 'DESC');
 
     const [reviews, total] = await query.getManyAndCount();
 
@@ -303,13 +303,13 @@ export class ReviewsService {
       .skip(offset)
       .take(limit);
 
-    if (sortBy === 'helpful') {
-      query.orderBy('review.helpfulCount', 'DESC');
-    } else if (sortBy === 'rating') {
-      query.orderBy('review.rating', 'DESC');
-    } else {
-      query.orderBy('review.createdAt', 'DESC');
-    }
+    const allowedSortBy = {
+      helpful: 'review.helpfulCount',
+      rating: 'review.rating',
+      recent: 'review.createdAt',
+    };
+    const safeSortBy = allowedSortBy[sortBy] || 'review.createdAt';
+    query.orderBy(safeSortBy, 'DESC');
 
     const [reviews, total] = await query.getManyAndCount();
 
