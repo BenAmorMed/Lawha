@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
 import { ProductSize } from './entities/product-size.entity';
 import { FrameOption } from './entities/frame-option.entity';
@@ -17,9 +17,11 @@ export class Product {
   @Column({ name: 'original_price', type: 'decimal', precision: 10, scale: 2, nullable: true })
   originalPrice: number;
 
+  @Index() // Optimized for price range filtering and sorting (ASC/DESC)
   @Column({ name: 'current_price', type: 'decimal', precision: 10, scale: 2 })
   currentPrice: number;
 
+  @Index() // Optimized for category-based filtering
   @Column({ type: 'varchar', length: 100 })
   category: string;
 
@@ -44,9 +46,11 @@ export class Product {
   @Column({ name: 'stock_quantity', type: 'int', default: 0 })
   stockQuantity: number;
 
+  @Index() // Optimized for active product status checks (highly frequent)
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
+  @Index() // Optimized for 'newest' sorting on the product listing page
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
