@@ -7,7 +7,10 @@ interface RatingProps {
   showCount?: boolean;
 }
 
-const Rating: React.FC<RatingProps> = ({ rating, count, showCount = true }) => {
+/**
+ * Optimized Rating component using React.memo for consistent performance in large lists.
+ */
+const Rating: React.FC<RatingProps> = React.memo(({ rating, count, showCount = true }) => {
   return (
     <div className="flex items-center gap-1">
       <div className="flex items-center">
@@ -26,6 +29,8 @@ const Rating: React.FC<RatingProps> = ({ rating, count, showCount = true }) => {
       )}
     </div>
   );
-};
+});
+
+Rating.displayName = 'Rating';
 
 export default Rating;
