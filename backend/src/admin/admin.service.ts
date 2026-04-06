@@ -38,10 +38,15 @@ export class AdminService {
 
     const total = await query.getCount();
 
+    // Whitelist sortBy fields and sortOrder to prevent SQL injection
+    const allowedSortBy = ['createdAt', 'total', 'status'];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
+    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
     const orders = await query
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.items', 'items')
-      .orderBy(`order.${sortBy}`, sortOrder)
+      .orderBy(`order.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
       .getMany();
