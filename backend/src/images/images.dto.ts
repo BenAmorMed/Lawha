@@ -1,3 +1,5 @@
+import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+
 export class UploadImageDto {
   original_filename: string;
   mime_type: string;
@@ -44,4 +46,11 @@ export class ImageMetadataDto {
   is_printable: boolean;
   print_quality: string; // 'excellent', 'good', 'acceptable', 'low'
   recommendations: string[];
+}
+
+export class UploadPreviewDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(15 * 1024 * 1024) // 15MB limit for the base64 string
+  dataUrl: string;
 }
