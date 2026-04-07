@@ -143,7 +143,20 @@ export class ImagesService {
     }
 
     const mimeType = matches[1];
+
+    // Security: Validate mime type
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedMimes.includes(mimeType)) {
+      throw new BadRequestException('Invalid preview image type');
+    }
+
     const buffer = Buffer.from(matches[2], 'base64');
+
+    // Security: Validate size to prevent DoS (10MB limit)
+    const maxSize = 10 * 1024 * 1024;
+    if (buffer.length > maxSize) {
+      throw new BadRequestException('Preview image too large (max 10MB)');
+    }
 
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
@@ -286,7 +299,7 @@ export class ImagesService {
       return `${publicEndpoint}/${bucketName}/${filename}`;
     } catch (error) {
       console.error('MinIO upload error:', error);
-      throw new InternalServerErrorException(`Failed to upload file to storage: ${error.message}`);
+      throw new InternalServerErrorException('Failed to upload file to storage');
     }
   }
 }

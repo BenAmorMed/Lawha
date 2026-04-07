@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-04-07 - [Denial of Service (DoS) in Base64 Image Upload]
+**Vulnerability:** The `POST /api/v1/images/upload-preview` endpoint accepted arbitrary-sized base64-encoded `dataUrl` strings without validation, risking memory exhaustion and DoS.
+**Learning:** Public endpoints processing base64 data require both request-level (DTO) and buffer-level (post-decoding) size limits, as base64 overhead can bypass naive character count checks.
+**Prevention:** Implement `MaxLength` validation in DTOs for data URLs and explicitly check decoded `buffer.length` before storage operations. Sanitize 500-level error messages to prevent leaking storage infrastructure details.
