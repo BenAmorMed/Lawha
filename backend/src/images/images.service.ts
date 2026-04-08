@@ -143,7 +143,18 @@ export class ImagesService {
     }
 
     const mimeType = matches[1];
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedMimes.includes(mimeType)) {
+      throw new BadRequestException('Invalid MIME type. Allowed: PNG, JPEG, WebP');
+    }
+
     const buffer = Buffer.from(matches[2], 'base64');
+
+    // Limit buffer size to 10MB
+    const maxBufferSize = 10 * 1024 * 1024;
+    if (buffer.length > maxBufferSize) {
+      throw new BadRequestException('Image size exceeds 10MB limit');
+    }
 
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
