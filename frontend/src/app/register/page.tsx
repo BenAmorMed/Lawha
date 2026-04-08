@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/auth-api';
+import Button from '@/components/ui/Button';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -135,13 +136,13 @@ export default function RegisterPage() {
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium transition-colors"
+              isLoading={loading}
+              fullWidth
             >
-              {loading ? 'Creating Account...' : 'Sign Up'}
-            </button>
+              Sign Up
+            </Button>
           </form>
 
           {/* Divider */}
