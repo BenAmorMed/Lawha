@@ -286,7 +286,7 @@ export class ImagesService {
       return `${publicEndpoint}/${bucketName}/${filename}`;
     } catch (error) {
       console.error('MinIO upload error:', error);
-      throw new InternalServerErrorException(`Failed to upload file to storage: ${error.message}`);
+      throw new InternalServerErrorException('Failed to upload file to storage');
     }
   }
 }
