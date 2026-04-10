@@ -19,3 +19,10 @@ coverage/
 
 # OS
 Thumbs.db
+
+# Logs
+*.log
+api_logs.txt
+
+# Build artifacts
+*.tsbuildinfo

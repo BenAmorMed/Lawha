@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import Button from '../ui/Button';
 
 interface ReviewFormProps {
   productId: string;
@@ -86,10 +87,10 @@ export default function ReviewForm({
 
       {/* Rating */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label id="rating-label" className="block text-sm font-medium text-gray-700 mb-2">
           Rating
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-labelledby="rating-label">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
@@ -97,7 +98,9 @@ export default function ReviewForm({
               onClick={() => setRating(star)}
               className={`text-3xl transition ${
                 star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              } focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded`}
+              aria-label={`${star} out of 5 stars`}
+              aria-pressed={star === rating}
             >
               ★
             </button>
@@ -108,10 +111,11 @@ export default function ReviewForm({
 
       {/* Title */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="review-title" className="block text-sm font-medium text-gray-700 mb-2">
           Review Title
         </label>
         <input
+          id="review-title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -126,10 +130,11 @@ export default function ReviewForm({
 
       {/* Comment */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="review-comment" className="block text-sm font-medium text-gray-700 mb-2">
           Your Review
         </label>
         <textarea
+          id="review-comment"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder="Share your experience with this product..."
@@ -142,13 +147,14 @@ export default function ReviewForm({
         </p>
       </div>
 
-      <button
+      <Button
         type="submit"
-        disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
+        isLoading={loading}
+        disabled={title.length === 0 || comment.length === 0}
+        fullWidth
       >
-        {loading ? 'Submitting...' : 'Submit Review'}
-      </button>
+        Submit Review
+      </Button>
     </form>
   );
 }
