@@ -78,6 +78,9 @@ export class ReviewsService {
 
     await this.reviewsRepository.save(review);
 
+    // Update product denormalized rating and count
+    await this.updateProductRating(productId);
+
     this.logger.log(
       `Review created by user ${userId} for product ${productId}`,
       ReviewsService.name,
@@ -193,6 +196,9 @@ export class ReviewsService {
     Object.assign(review, updateReviewDto);
     await this.reviewsRepository.save(review);
 
+    // Update product denormalized rating and count
+    await this.updateProductRating(review.productId);
+
     this.logger.log(
       `Review ${reviewId} updated by user ${userId}`,
       ReviewsService.name,
@@ -210,6 +216,9 @@ export class ReviewsService {
     }
 
     await this.reviewsRepository.delete(reviewId);
+
+    // Update product denormalized rating and count
+    await this.updateProductRating(review.productId);
 
     this.logger.log(
       `Review ${reviewId} deleted by user ${userId}`,
@@ -322,5 +331,19 @@ export class ReviewsService {
         pages: Math.ceil(Number(total) / limit),
       },
     };
+  }
+
+  private async updateProductRating(productId: string): Promise<void> {
+    const stats = await this.reviewsRepository
+      .createQueryBuilder('review')
+      .select('AVG(review.rating)', 'avg')
+      .addSelect('COUNT(review.id)', 'count')
+      .where('review.productId = :productId', { productId })
+      .getRawOne();
+
+    await this.productsRepository.update(productId, {
+      rating: parseFloat(stats?.avg || 0),
+      reviewsCount: parseInt(stats?.count || 0, 10),
+    });
   }
 }

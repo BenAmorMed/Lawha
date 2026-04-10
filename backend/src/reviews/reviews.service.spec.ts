@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 describe('ReviewsService', () => {
   let service: ReviewsService;
   let reviewsRepository: Repository<Review>;
+  let productsRepository: Repository<Product>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,7 +26,9 @@ describe('ReviewsService', () => {
         },
         {
           provide: getRepositoryToken(Product),
-          useValue: {},
+          useValue: {
+            update: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Order),
@@ -36,6 +39,7 @@ describe('ReviewsService', () => {
 
     service = module.get<ReviewsService>(ReviewsService);
     reviewsRepository = module.get<Repository<Review>>(getRepositoryToken(Review));
+    productsRepository = module.get<Repository<Product>>(getRepositoryToken(Product));
   });
 
   describe('getProductStats', () => {
@@ -80,6 +84,31 @@ describe('ReviewsService', () => {
       expect(result.totalReviews).toBe(0);
       expect(result.averageRating).toBe(0);
       expect(result.ratingDistribution).toEqual({});
+    });
+  });
+
+  describe('updateProductRating', () => {
+    it('should update product with aggregated rating and count', async () => {
+      const productId = 'product-1';
+      const mockStats = { avg: '4.5', count: '10' };
+
+      const queryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue(mockStats),
+      };
+
+      jest.spyOn(reviewsRepository, 'createQueryBuilder').mockReturnValue(queryBuilder);
+      const updateSpy = jest.spyOn(productsRepository, 'update');
+
+      // Access private method for testing
+      await (service as any).updateProductRating(productId);
+
+      expect(updateSpy).toHaveBeenCalledWith(productId, {
+        rating: 4.5,
+        reviewsCount: 10,
+      });
     });
   });
 
