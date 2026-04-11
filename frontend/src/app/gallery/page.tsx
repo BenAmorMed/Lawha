@@ -32,26 +32,15 @@ export default function GalleryPage() {
         setLoading(true);
         const data = await productsApi.getProducts();
 
-        // Fetch ratings for all products in one go to avoid N+1
-        const productIds = data.map((p: any) => p.id);
-        let allStats: Record<string, { averageRating: number; totalReviews: number }> = {};
-
-        try {
-          allStats = await reviewsApi.getMultipleProductStats(productIds);
-        } catch (err) {
-          console.error('Failed to fetch multiple product stats:', err);
-        }
-
-        const formattedProducts = data.map((p: any) => {
-          const stats = allStats[p.id] || { averageRating: 0, totalReviews: 0 };
-          return {
-            ...p,
-            rating: {
-              average: stats.averageRating,
-              total: stats.totalReviews,
-            },
-          };
-        });
+        // Optimization: Use denormalized rating data from the product list directly
+        // to avoid a redundant aggregate API call.
+        const formattedProducts = data.map((p: any) => ({
+          ...p,
+          rating: {
+            average: parseFloat(p.rating?.toString() || '0'),
+            total: p.reviewsCount || 0,
+          },
+        }));
 
         setProducts(formattedProducts);
         if (data.length > 0) {
