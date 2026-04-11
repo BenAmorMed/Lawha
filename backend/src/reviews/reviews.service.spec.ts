@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 describe('ReviewsService', () => {
   let service: ReviewsService;
   let reviewsRepository: Repository<Review>;
+  let productsRepository: Repository<Product>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -21,21 +22,30 @@ describe('ReviewsService', () => {
             getManyAndCount: jest.fn(),
             getRawOne: jest.fn(),
             getRawMany: jest.fn(),
+            save: jest.fn(),
+            create: jest.fn(),
+            delete: jest.fn(),
           },
         },
         {
           provide: getRepositoryToken(Product),
-          useValue: {},
+          useValue: {
+            findOne: jest.fn(),
+            update: jest.fn(),
+          },
         },
         {
           provide: getRepositoryToken(Order),
-          useValue: {},
+          useValue: {
+            findOne: jest.fn(),
+          },
         },
       ],
     }).compile();
 
     service = module.get<ReviewsService>(ReviewsService);
     reviewsRepository = module.get<Repository<Review>>(getRepositoryToken(Review));
+    productsRepository = module.get<Repository<Product>>(getRepositoryToken(Product));
   });
 
   describe('getProductStats', () => {
@@ -99,16 +109,13 @@ describe('ReviewsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
       };
 
-      const ratingQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '5', total_reviews: '1' }),
-      };
-
       jest.spyOn(reviewsRepository, 'createQueryBuilder')
-        .mockReturnValueOnce(queryBuilder)
-        .mockReturnValueOnce(ratingQueryBuilder);
+        .mockReturnValueOnce(queryBuilder);
+
+      jest.spyOn(productsRepository, 'findOne').mockResolvedValue({
+        rating: 5,
+        reviewsCount: 1,
+      } as any);
 
       const result = await service.getProductReviews('product-1');
 
