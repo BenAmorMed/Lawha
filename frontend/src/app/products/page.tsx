@@ -185,9 +185,19 @@ function ProductListingContent() {
                 <div>
                   <h3 className="font-bold text-dark mb-6 tracking-wider text-sm uppercase border-b pb-2">Price Range</h3>
                   <div className="flex items-center gap-2">
-                    <input type="number" placeholder="Min" className="w-full px-3 py-2 border rounded-md text-sm" />
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      className="w-full px-3 py-2 border rounded-md text-sm"
+                      aria-label="Minimum price"
+                    />
                     <span className="text-gray-400">-</span>
-                    <input type="number" placeholder="Max" className="w-full px-3 py-2 border rounded-md text-sm" />
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      className="w-full px-3 py-2 border rounded-md text-sm"
+                      aria-label="Maximum price"
+                    />
                   </div>
                 </div>
               </div>
@@ -253,7 +263,10 @@ function ProductListingContent() {
           <div className="absolute right-0 top-0 h-full w-4/5 max-w-sm bg-white p-6 shadow-xl animate-in slide-in-from-right">
             <div className="flex items-center justify-between mb-8">
               <h2 className="font-bold text-lg">Filters</h2>
-              <button onClick={() => setShowMobileFilters(false)}>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                aria-label="Close filters"
+              >
                 <X size={24} />
               </button>
             </div>
