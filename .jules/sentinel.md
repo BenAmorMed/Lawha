@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-04-13 - [SQL Injection in Admin Orders & Improper Error Handling]
+**Vulnerability:** The `GET /api/v1/admin/orders` endpoint directly interpolated `sortBy` and `sortOrder` query parameters into the TypeORM `orderBy` clause, creating a SQL injection vector. Additionally, status update methods threw generic `Error` objects.
+**Learning:** Even admin-protected endpoints must be secured against SQL injection, as they are part of the attack surface (e.g., via session hijacking or malicious admins). Using whitelists for dynamic query parts is the safest approach.
+**Prevention:** Always whitelist dynamic column names and sort directions in ORM queries. Use specific NestJS exceptions (like `BadRequestException`) to ensure proper HTTP response codes and prevent leakage of internal error details.
