@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import Button from '../ui/Button';
 
 interface ReviewFormProps {
   productId: string;
@@ -64,12 +65,9 @@ export default function ReviewForm({
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
         <p className="text-blue-900 mb-4">Sign in to leave a review</p>
-        <a
-          href="/login"
-          className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
+        <Button href="/login" variant="primary">
           Sign In
-        </a>
+        </Button>
       </div>
     );
   }
@@ -95,7 +93,9 @@ export default function ReviewForm({
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
+              aria-label={`Rate ${star} out of 5 stars`}
+              aria-pressed={star <= rating}
+              className={`text-3xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded ${
                 star <= rating ? 'text-yellow-400' : 'text-gray-300'
               }`}
             >
@@ -142,13 +142,14 @@ export default function ReviewForm({
         </p>
       </div>
 
-      <button
+      <Button
         type="submit"
-        disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
+        isLoading={loading}
+        disabled={title.length === 0 || comment.length === 0}
+        fullWidth
       >
-        {loading ? 'Submitting...' : 'Submit Review'}
-      </button>
+        Submit Review
+      </Button>
     </form>
   );
 }
