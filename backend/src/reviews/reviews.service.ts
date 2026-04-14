@@ -78,6 +78,9 @@ export class ReviewsService {
 
     await this.reviewsRepository.save(review);
 
+    // Update denormalized stats on product
+    await this.updateProductStats(productId);
+
     this.logger.log(
       `Review created by user ${userId} for product ${productId}`,
       ReviewsService.name,
@@ -109,13 +112,11 @@ export class ReviewsService {
 
     const [reviews, total] = await query.getManyAndCount();
 
-    // Calculate global product rating average and total count in a single query
-    const ratingQuery = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg_rating')
-      .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
+    // Optimization: Use denormalized data from Product entity instead of aggregating reviews
+    const product = await this.productsRepository.findOne({
+      where: { id: productId },
+      select: ['rating', 'reviewsCount'],
+    });
 
     return {
       reviews: reviews.map((review) => ({
@@ -135,8 +136,8 @@ export class ReviewsService {
         pages: Math.ceil(Number(total) / limit),
       },
       productRating: {
-        average: parseFloat(ratingQuery?.avg_rating || 0),
-        total: parseInt(ratingQuery?.total_reviews || 0, 10),
+        average: product ? parseFloat(product.rating.toString()) : 0,
+        total: product ? product.reviewsCount : 0,
       },
     };
   }
@@ -193,6 +194,9 @@ export class ReviewsService {
     Object.assign(review, updateReviewDto);
     await this.reviewsRepository.save(review);
 
+    // Update denormalized stats on product
+    await this.updateProductStats(review.productId);
+
     this.logger.log(
       `Review ${reviewId} updated by user ${userId}`,
       ReviewsService.name,
@@ -210,6 +214,9 @@ export class ReviewsService {
     }
 
     await this.reviewsRepository.delete(reviewId);
+
+    // Update denormalized stats on product
+    await this.updateProductStats(review.productId);
 
     this.logger.log(
       `Review ${reviewId} deleted by user ${userId}`,
@@ -289,6 +296,30 @@ export class ReviewsService {
       totalReviews: totalReviews,
       ratingDistribution: distribution,
     };
+  }
+
+  /**
+   * Updates the denormalized rating and reviewsCount in the Product entity
+   * based on the current reviews in the database.
+   */
+  async updateProductStats(productId: string): Promise<void> {
+    try {
+      const stats = await this.getProductStats(productId);
+
+      await this.productsRepository.update(productId, {
+        rating: stats.averageRating,
+        reviewsCount: stats.totalReviews,
+      });
+
+      this.logger.debug(
+        `Updated denormalized stats for product ${productId}: rating=${stats.averageRating}, count=${stats.totalReviews}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to update product stats for ${productId}: ${error.message}`,
+        error.stack,
+      );
+    }
   }
 
   async getAllReviews(

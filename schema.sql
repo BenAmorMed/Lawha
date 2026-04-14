@@ -23,13 +23,22 @@ CREATE TABLE users (
 -- PRODUCTS
 -- ============================================================
 CREATE TABLE products (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name          VARCHAR(255) NOT NULL,
-  slug          VARCHAR(255) UNIQUE NOT NULL,
-  description   TEXT,
-  base_price    NUMERIC(10,2) NOT NULL,
-  active        BOOLEAN DEFAULT TRUE,
-  created_at    TIMESTAMPTZ DEFAULT NOW()
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name           VARCHAR(255) NOT NULL,
+  slug           VARCHAR(255) UNIQUE NOT NULL,
+  description    TEXT,
+  original_price NUMERIC(10,2),
+  current_price  NUMERIC(10,2) NOT NULL,
+  category       VARCHAR(100) NOT NULL,
+  image_url      VARCHAR(255),
+  rating         NUMERIC(3,2) DEFAULT 0,
+  reviews_count  INT DEFAULT 0,
+  is_special     BOOLEAN DEFAULT FALSE,
+  shipping_free  BOOLEAN DEFAULT FALSE,
+  stock_quantity INT DEFAULT 0,
+  is_active      BOOLEAN DEFAULT TRUE,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Product size variants (e.g. 30x40cm, 50x70cm)
@@ -180,10 +189,10 @@ CREATE TRIGGER trg_orders_updated
 -- ============================================================
 -- SEED DATA
 -- ============================================================
-INSERT INTO products (name, slug, description, base_price) VALUES
-  ('Canvas Print', 'canvas-print', 'Premium stretched canvas print', 29.90),
-  ('Framed Poster', 'framed-poster', 'High-quality framed photo poster', 39.90),
-  ('Acrylic Print', 'acrylic-print', 'Modern acrylic glass print', 59.90);
+INSERT INTO products (name, slug, description, current_price, category) VALUES
+  ('Canvas Print', 'canvas-print', 'Premium stretched canvas print', 29.90, 'Wall Art'),
+  ('Framed Poster', 'framed-poster', 'High-quality framed photo poster', 39.90, 'Wall Art'),
+  ('Acrylic Print', 'acrylic-print', 'Modern acrylic glass print', 59.90, 'Wall Art');
 
 -- Sizes for Canvas Print
 INSERT INTO product_sizes (product_id, label, width_cm, height_cm, price_delta)

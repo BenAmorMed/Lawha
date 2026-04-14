@@ -15,28 +15,25 @@ export interface FrameOption {
   priceDelta: number;
 }
 
-export interface Product {
+export interface ProductBase {
   id: string;
   name: string;
   description: string;
-  basePrice: number;
   category: string;
+  basePrice: number;
   imageUrl?: string;
+  rating: number;
+  reviewsCount: number;
   isActive: boolean;
+}
+
+export interface Product extends ProductBase {
   createdAt: string;
   sizes: ProductSize[];
   frameOptions: FrameOption[];
 }
 
-export interface ProductList {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  basePrice: number;
-  imageUrl?: string;
-  isActive: boolean;
-}
+export type ProductList = ProductBase;
 
 export interface Template {
   id: string;
@@ -49,17 +46,43 @@ export interface Template {
   createdAt: string;
 }
 
+export interface PaginatedProducts {
+  products: ProductList[];
+  total: number;
+}
+
 export const productsApi = {
   // Fetch all products
-  getProducts: async (): Promise<ProductList[]> => {
-    const response = await apiClient.get('/products');
-    return response.data;
+  getProducts: async (params?: {
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    sortBy?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedProducts> => {
+    const response = await apiClient.get('/products', { params });
+    const { products, total } = response.data;
+
+    return {
+      products: products.map((p: any) => ({
+        ...p,
+        basePrice: p.currentPrice, // Map currentPrice from backend to basePrice used in frontend
+      })),
+      total,
+    };
   },
 
   // Fetch single product with sizes and frames
   getProduct: async (id: string): Promise<Product> => {
     const response = await apiClient.get(`/products/${id}`);
-    return response.data;
+    const product = response.data;
+
+    return {
+      ...product,
+      basePrice: product.currentPrice, // Map currentPrice from backend to basePrice used in frontend
+    };
   },
 
   // Fetch all design templates
