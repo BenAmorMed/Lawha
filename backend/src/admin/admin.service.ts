@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from '../orders/order.entity';
 import { Review } from '../reviews/review.entity';
+import { ReviewsService } from '../reviews/reviews.service';
 
 @Injectable()
 export class AdminService {
@@ -13,6 +14,7 @@ export class AdminService {
     private ordersRepository: Repository<Order>,
     @InjectRepository(Review)
     private reviewsRepository: Repository<Review>,
+    private reviewsService: ReviewsService,
   ) { }
 
   async getAllOrders(filters: {
@@ -365,7 +367,12 @@ export class AdminService {
       throw new NotFoundException(`Review ${reviewId} not found`);
     }
 
+    const productId = review.productId;
     await this.reviewsRepository.delete(reviewId);
+
+    // Update denormalized stats on product
+    await this.reviewsService.updateProductStats(productId);
+
     this.logger.log(`Review ${reviewId} deleted by Admin`);
     return { success: true };
   }
