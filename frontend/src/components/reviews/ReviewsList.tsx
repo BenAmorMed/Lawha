@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { reviewsApi, Review } from '@/api/reviews-api';
+import React, { useState, useEffect } from "react";
+import { reviewsApi, Review } from "@/api/reviews-api";
+import Rating from "../ui/Rating";
 
 interface ReviewsListProps {
   productId: string;
   onReviewAdded?: () => void;
 }
 
-export default function ReviewsList({ productId, onReviewAdded }: ReviewsListProps) {
+export default function ReviewsList({
+  productId,
+  onReviewAdded,
+}: ReviewsListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState({
     averageRating: 0,
@@ -17,7 +21,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'helpful' | 'recent' | 'rating'>('recent');
+  const [sortBy, setSortBy] = useState<"helpful" | "recent" | "rating">(
+    "recent",
+  );
 
   useEffect(() => {
     fetchReviews();
@@ -37,8 +43,8 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
         }));
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load reviews');
-      console.error('Fetch reviews error:', err);
+      setError(err.response?.data?.message || "Failed to load reviews");
+      console.error("Fetch reviews error:", err);
     } finally {
       setLoading(false);
     }
@@ -49,7 +55,7 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       const data = await reviewsApi.getProductStats(productId);
       setStats(data);
     } catch (err) {
-      console.error('Fetch stats error:', err);
+      console.error("Fetch stats error:", err);
     }
   };
 
@@ -58,28 +64,15 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       await reviewsApi.markHelpful(reviewId);
       fetchReviews();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to mark as helpful');
+      alert(err.response?.data?.message || "Failed to mark as helpful");
     }
-  };
-
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span
-            key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
-          >
-            ★
-          </span>
-        ))}
-      </div>
-    );
   };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        Customer Reviews
+      </h2>
 
       {/* Rating Summary */}
       {stats.totalReviews > 0 && (
@@ -92,10 +85,12 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                 </span>
                 <span className="text-gray-600">out of 5</span>
               </div>
-              <div className="mb-2">{renderStars(Math.round(stats.averageRating))}</div>
+              <div className="mb-2">
+                <Rating rating={stats.averageRating} showCount={false} />
+              </div>
               <p className="text-sm text-gray-600">
                 Based on {stats.totalReviews} review
-                {stats.totalReviews !== 1 ? 's' : ''}
+                {stats.totalReviews !== 1 ? "s" : ""}
               </p>
             </div>
 
@@ -173,20 +168,27 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       {!loading && reviews.length > 0 && (
         <div className="space-y-6">
           {reviews.map((review) => (
-            <div key={review.id} className="pb-6 border-b border-gray-200 last:border-0">
+            <div
+              key={review.id}
+              className="pb-6 border-b border-gray-200 last:border-0"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <div>{renderStars(review.rating)}</div>
+                    <div>
+                      <Rating rating={review.rating} showCount={false} />
+                    </div>
                     {review.verifiedPurchase && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                         Verified Purchase
                       </span>
                     )}
                   </div>
-                  <h4 className="font-semibold text-gray-900">{review.title}</h4>
+                  <h4 className="font-semibold text-gray-900">
+                    {review.title}
+                  </h4>
                   <p className="text-sm text-gray-600">
-                    by {review.userEmail || 'Anonymous'} •{' '}
+                    by {review.userEmail || "Anonymous"} •{" "}
                     {new Date(review.createdAt).toLocaleDateString()}
                   </p>
                 </div>
