@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-04-15 - [SQL Injection in Admin Sorting & Inconsistent Status Validation]
+**Vulnerability:** The `AdminService.getAllOrders` method interpolated `sortBy` and `sortOrder` directly into the query, creating a SQL injection risk. Additionally, the `OrderStatus` enum was missing the `REFUNDED` status used in logic, and status updates used hardcoded strings and generic errors.
+**Learning:** Even within `createQueryBuilder`, direct interpolation of user-provided keys in `orderBy` can bypass TypeORM's parameterization, especially if those keys aren't matched against entity properties.
+**Prevention:** Always whitelist dynamic query parameters like `sortBy` and `sortOrder`. Use enums for status validation and ensure they are exhaustive and synchronized across entities and services. Throw specific HTTP exceptions (e.g., `BadRequestException`) instead of generic `Error` objects to ensure secure and informative API responses.
