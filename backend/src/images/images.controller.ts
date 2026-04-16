@@ -17,7 +17,7 @@ import { OptionalJwtAuthGuard } from './../auth/optional-jwt-auth.guard';
 import { CurrentUser } from './../auth/current-user.decorator';
 import { User } from './../auth/entities/user.entity';
 import { ImagesService, IFile } from './images.service';
-import { ImageListDto, ImageMetadataDto } from './images.dto';
+import { ImageListDto, ImageMetadataDto, UploadPreviewDto } from './images.dto';
 
 @Controller('api/v1/images')
 export class ImagesController {
@@ -48,9 +48,9 @@ export class ImagesController {
   @Post('upload-preview')
   @HttpCode(HttpStatus.CREATED)
   async uploadPreview(
-    @Body('dataUrl') dataUrl: string,
+    @Body() uploadPreviewDto: UploadPreviewDto,
   ): Promise<{ previewUrl: string }> {
-    return this.imagesService.uploadPreview(dataUrl);
+    return this.imagesService.uploadPreview(uploadPreviewDto.dataUrl);
   }
 
   @Get()

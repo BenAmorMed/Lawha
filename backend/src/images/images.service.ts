@@ -133,17 +133,24 @@ export class ImagesService {
   }
 
   async uploadPreview(dataUrl: string): Promise<{ previewUrl: string }> {
-    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
-      throw new BadRequestException('Invalid dataUrl format');
+    // 10MB size limit for base64 string
+    const maxSize = 10 * 1024 * 1024 * 1.37; // Account for base64 overhead
+    if (dataUrl.length > maxSize) {
+      throw new BadRequestException('Preview image is too large (max 10MB)');
     }
 
-    const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      throw new BadRequestException('Invalid base64 string');
+    const matches = dataUrl.match(/^data:(image\/(png|jpeg|webp));base64,(.+)$/);
+    if (!matches || matches.length !== 4) {
+      throw new BadRequestException('Invalid dataUrl format or unsupported image type');
     }
 
     const mimeType = matches[1];
-    const buffer = Buffer.from(matches[2], 'base64');
+    const buffer = Buffer.from(matches[3], 'base64');
+
+    // Final buffer size check
+    if (buffer.length > 10 * 1024 * 1024) {
+      throw new BadRequestException('Preview image is too large (max 10MB)');
+    }
 
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
