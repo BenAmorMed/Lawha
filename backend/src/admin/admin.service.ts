@@ -36,15 +36,13 @@ export class AdminService {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
-
-    const orders = await query
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.items', 'items')
       .orderBy(`order.${sortBy}`, sortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -106,15 +104,7 @@ export class AdminService {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
 
-    const validStatuses = [
-      'pending',
-      'processing',
-      'printing',
-      'shipped',
-      'delivered',
-      'cancelled',
-      'refunded',
-    ];
+    const validStatuses: string[] = Object.values(OrderStatus);
 
     if (!validStatuses.includes(status)) {
       throw new Error(`Invalid status: ${status}`);
@@ -126,11 +116,11 @@ export class AdminService {
       order.trackingNumber = trackingNumber;
     }
 
-    if (status === 'shipped' && !order.shippedAt) {
+    if (status === OrderStatus.SHIPPED && !order.shippedAt) {
       order.shippedAt = new Date();
     }
 
-    if (status === 'delivered' && !order.deliveredAt) {
+    if (status === OrderStatus.DELIVERED && !order.deliveredAt) {
       order.deliveredAt = new Date();
     }
 
@@ -151,42 +141,41 @@ export class AdminService {
   }
 
   async getOrderAnalytics() {
-    // Total orders count
-    const totalOrders = await this.ordersRepository.count();
+    // Optimization: Consolidate status-based queries into a single grouped query
+    // and consolidate date-based queries into another grouped query.
+    // This reduces database roundtrips from 6 to 2.
 
-    // Orders by status
-    const ordersByStatus = await this.ordersRepository
+    // 1. Get status breakdown and financial metrics in one go
+    const statusStats = await this.ordersRepository
       .createQueryBuilder('order')
       .select('order.status', 'status')
       .addSelect('COUNT(order.id)', 'count')
+      .addSelect('SUM(order.total)', 'sum')
       .groupBy('order.status')
       .getRawMany();
 
-    // Revenue (total amount from completed orders)
-    const revenue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
-      })
-      .getRawOne();
+    let totalOrders = 0;
+    let totalRevenue = 0;
+    let grandTotalAmount = 0;
+    const statusBreakdown = {};
 
-    // Average order value
-    const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
-      .getRawOne();
+    statusStats.forEach((stat) => {
+      const count = parseInt(stat.count, 10);
+      const sum = parseFloat(stat.sum || 0);
 
-    // Recent orders (last 7 days)
+      totalOrders += count;
+      grandTotalAmount += sum;
+      statusBreakdown[stat.status] = count;
+
+      if (stat.status === OrderStatus.SHIPPED || stat.status === OrderStatus.DELIVERED) {
+        totalRevenue += sum;
+      }
+    });
+
+    // 2. Get recent orders and distribution in one go
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const recentOrders = await this.ordersRepository
-      .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .getCount();
-
-    // Orders by day (last 7 days)
     const ordersByDay = await this.ordersRepository
       .createQueryBuilder('order')
       .select('DATE(order.createdAt)', 'date')
@@ -196,20 +185,19 @@ export class AdminService {
       .orderBy('DATE(order.createdAt)', 'ASC')
       .getRawMany();
 
+    const recentOrdersCount = ordersByDay.reduce(
+      (acc, day) => acc + parseInt(day.count, 10),
+      0,
+    );
+
     return {
       summary: {
         total_orders: totalOrders,
-        revenue: parseFloat(revenue?.total || 0),
-        average_order_value: parseFloat(avgValue?.average || 0),
-        orders_last_7_days: recentOrders,
+        revenue: totalRevenue,
+        average_order_value: totalOrders > 0 ? grandTotalAmount / totalOrders : 0,
+        orders_last_7_days: recentOrdersCount,
       },
-      status_breakdown: ordersByStatus.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.status]: parseInt(item.count, 10),
-        }),
-        {},
-      ),
+      status_breakdown: statusBreakdown,
       orders_by_day: ordersByDay.map((item) => ({
         date: item.date,
         count: parseInt(item.count, 10),
@@ -230,15 +218,7 @@ export class AdminService {
       throw new NotFoundException('No orders found');
     }
 
-    const validStatuses = [
-      'pending',
-      'processing',
-      'printing',
-      'shipped',
-      'delivered',
-      'cancelled',
-      'refunded',
-    ];
+    const validStatuses: string[] = Object.values(OrderStatus);
 
     if (!validStatuses.includes(status)) {
       throw new Error(`Invalid status: ${status}`);
@@ -251,11 +231,11 @@ export class AdminService {
         order.trackingNumber = trackingNumber;
       }
 
-      if (status === 'shipped' && !order.shippedAt) {
+      if (status === OrderStatus.SHIPPED && !order.shippedAt) {
         order.shippedAt = new Date();
       }
 
-      if (status === 'delivered' && !order.deliveredAt) {
+      if (status === OrderStatus.DELIVERED && !order.deliveredAt) {
         order.deliveredAt = new Date();
       }
 
@@ -280,7 +260,7 @@ export class AdminService {
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
-    order.status = 'printing' as any;
+    order.status = OrderStatus.PRINTING;
     await this.ordersRepository.save(order);
     this.logger.log(`Order ${orderId} approved for printing`);
     return { id: order.id, status: order.status };
@@ -291,7 +271,7 @@ export class AdminService {
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
-    order.status = 'cancelled' as any;
+    order.status = OrderStatus.CANCELLED;
     await this.ordersRepository.save(order);
     this.logger.log(`Order ${orderId} rejected. Reason: ${reason || 'none'}`);
     return { id: order.id, status: order.status, reason };
@@ -335,18 +315,16 @@ export class AdminService {
       query.andWhere('review.rating = :rating', { rating });
     }
 
-    const total = await query.getCount();
-
     // Whitelist sortBy fields to prevent SQL injection
     const allowedSortBy = ['createdAt', 'rating', 'helpfulCount'];
     const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
     const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const reviews = await query
+    const [reviews, total] = await query
       .orderBy(`review.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: reviews,
