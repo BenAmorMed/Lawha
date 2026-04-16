@@ -1,3 +1,5 @@
+import { IsString, IsNotEmpty, Matches } from 'class-validator';
+
 export class UploadImageDto {
   original_filename: string;
   mime_type: string;
@@ -44,4 +46,13 @@ export class ImageMetadataDto {
   is_printable: boolean;
   print_quality: string; // 'excellent', 'good', 'acceptable', 'low'
   recommendations: string[];
+}
+
+export class UploadPreviewDto {
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^data:image\/(png|jpeg|webp);base64,/, {
+    message: 'dataUrl must be a valid base64 image (PNG, JPEG, WebP)',
+  })
+  dataUrl: string;
 }
