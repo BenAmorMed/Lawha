@@ -1,8 +1,13 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Order, OrderStatus } from '../orders/order.entity';
-import { Review } from '../reviews/review.entity';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Order, OrderStatus } from "../orders/order.entity";
+import { Review } from "../reviews/review.entity";
 
 @Injectable()
 export class AdminService {
@@ -13,35 +18,40 @@ export class AdminService {
     private ordersRepository: Repository<Order>,
     @InjectRepository(Review)
     private reviewsRepository: Repository<Review>,
-  ) { }
+  ) {}
 
   async getAllOrders(filters: {
     status?: string;
     limit?: number;
     offset?: number;
-    sortBy?: 'createdAt' | 'total' | 'status';
-    sortOrder?: 'ASC' | 'DESC';
+    sortBy?: "createdAt" | "total" | "status";
+    sortOrder?: "ASC" | "DESC";
   }) {
     const {
       status,
       limit = 20,
       offset = 0,
-      sortBy = 'createdAt',
-      sortOrder = 'DESC',
+      sortBy = "createdAt",
+      sortOrder = "DESC",
     } = filters;
 
-    const query = this.ordersRepository.createQueryBuilder('order');
+    const query = this.ordersRepository.createQueryBuilder("order");
 
     if (status) {
-      query.where('order.status = :status', { status });
+      query.where("order.status = :status", { status });
     }
 
     const total = await query.getCount();
 
+    // Whitelist sortBy and sortOrder to prevent SQL injection
+    const allowedSortBy = ["createdAt", "total", "status"];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : "createdAt";
+    const safeSortOrder = sortOrder === "ASC" ? "ASC" : "DESC";
+
     const orders = await query
-      .leftJoinAndSelect('order.user', 'user')
-      .leftJoinAndSelect('order.items', 'items')
-      .orderBy(`order.${sortBy}`, sortOrder)
+      .leftJoinAndSelect("order.user", "user")
+      .leftJoinAndSelect("order.items", "items")
+      .orderBy(`order.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
       .getMany();
@@ -70,7 +80,7 @@ export class AdminService {
   async getOrderById(orderId: string) {
     const order = await this.ordersRepository.findOne({
       where: { id: orderId },
-      relations: ['user', 'items'],
+      relations: ["user", "items"],
     });
 
     if (!order) {
@@ -107,17 +117,17 @@ export class AdminService {
     }
 
     const validStatuses = [
-      'pending',
-      'processing',
-      'printing',
-      'shipped',
-      'delivered',
-      'cancelled',
-      'refunded',
+      "pending",
+      "processing",
+      "printing",
+      "shipped",
+      "delivered",
+      "cancelled",
+      "refunded",
     ];
 
     if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
+      throw new BadRequestException(`Invalid status: ${status}`);
     }
 
     order.status = status as OrderStatus;
@@ -126,11 +136,11 @@ export class AdminService {
       order.trackingNumber = trackingNumber;
     }
 
-    if (status === 'shipped' && !order.shippedAt) {
+    if (status === "shipped" && !order.shippedAt) {
       order.shippedAt = new Date();
     }
 
-    if (status === 'delivered' && !order.deliveredAt) {
+    if (status === "delivered" && !order.deliveredAt) {
       order.deliveredAt = new Date();
     }
 
@@ -156,25 +166,25 @@ export class AdminService {
 
     // Orders by status
     const ordersByStatus = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('order.status', 'status')
-      .addSelect('COUNT(order.id)', 'count')
-      .groupBy('order.status')
+      .createQueryBuilder("order")
+      .select("order.status", "status")
+      .addSelect("COUNT(order.id)", "count")
+      .groupBy("order.status")
       .getRawMany();
 
     // Revenue (total amount from completed orders)
     const revenue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
+      .createQueryBuilder("order")
+      .select("SUM(order.total)", "total")
+      .where("order.status IN (:...statuses)", {
+        statuses: ["shipped", "delivered"],
       })
       .getRawOne();
 
     // Average order value
     const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
+      .createQueryBuilder("order")
+      .select("AVG(order.total)", "average")
       .getRawOne();
 
     // Recent orders (last 7 days)
@@ -182,18 +192,18 @@ export class AdminService {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const recentOrders = await this.ordersRepository
-      .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
+      .createQueryBuilder("order")
+      .where("order.createdAt >= :date", { date: sevenDaysAgo })
       .getCount();
 
     // Orders by day (last 7 days)
     const ordersByDay = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('DATE(order.createdAt)', 'date')
-      .addSelect('COUNT(order.id)', 'count')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .groupBy('DATE(order.createdAt)')
-      .orderBy('DATE(order.createdAt)', 'ASC')
+      .createQueryBuilder("order")
+      .select("DATE(order.createdAt)", "date")
+      .addSelect("COUNT(order.id)", "count")
+      .where("order.createdAt >= :date", { date: sevenDaysAgo })
+      .groupBy("DATE(order.createdAt)")
+      .orderBy("DATE(order.createdAt)", "ASC")
       .getRawMany();
 
     return {
@@ -227,21 +237,21 @@ export class AdminService {
     });
 
     if (orders.length === 0) {
-      throw new NotFoundException('No orders found');
+      throw new NotFoundException("No orders found");
     }
 
     const validStatuses = [
-      'pending',
-      'processing',
-      'printing',
-      'shipped',
-      'delivered',
-      'cancelled',
-      'refunded',
+      "pending",
+      "processing",
+      "printing",
+      "shipped",
+      "delivered",
+      "cancelled",
+      "refunded",
     ];
 
     if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
+      throw new BadRequestException(`Invalid status: ${status}`);
     }
 
     const updatedOrders = orders.map((order) => {
@@ -251,11 +261,11 @@ export class AdminService {
         order.trackingNumber = trackingNumber;
       }
 
-      if (status === 'shipped' && !order.shippedAt) {
+      if (status === "shipped" && !order.shippedAt) {
         order.shippedAt = new Date();
       }
 
-      if (status === 'delivered' && !order.deliveredAt) {
+      if (status === "delivered" && !order.deliveredAt) {
         order.deliveredAt = new Date();
       }
 
@@ -276,24 +286,28 @@ export class AdminService {
   }
 
   async approveOrder(orderId: string) {
-    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
-    order.status = 'printing' as any;
+    order.status = "printing" as any;
     await this.ordersRepository.save(order);
     this.logger.log(`Order ${orderId} approved for printing`);
     return { id: order.id, status: order.status };
   }
 
   async rejectOrder(orderId: string, reason?: string) {
-    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
-    order.status = 'cancelled' as any;
+    order.status = "cancelled" as any;
     await this.ordersRepository.save(order);
-    this.logger.log(`Order ${orderId} rejected. Reason: ${reason || 'none'}`);
+    this.logger.log(`Order ${orderId} rejected. Reason: ${reason || "none"}`);
     return { id: order.id, status: order.status, reason };
   }
 
@@ -305,8 +319,8 @@ export class AdminService {
     rating?: number;
     limit?: number;
     offset?: number;
-    sortBy?: 'createdAt' | 'rating' | 'helpfulCount';
-    sortOrder?: 'ASC' | 'DESC';
+    sortBy?: "createdAt" | "rating" | "helpfulCount";
+    sortOrder?: "ASC" | "DESC";
   }) {
     const {
       productId,
@@ -314,33 +328,33 @@ export class AdminService {
       rating,
       limit = 20,
       offset = 0,
-      sortBy = 'createdAt',
-      sortOrder = 'DESC',
+      sortBy = "createdAt",
+      sortOrder = "DESC",
     } = filters;
 
     const query = this.reviewsRepository
-      .createQueryBuilder('review')
-      .leftJoinAndSelect('review.user', 'user')
-      .leftJoinAndSelect('review.product', 'product');
+      .createQueryBuilder("review")
+      .leftJoinAndSelect("review.user", "user")
+      .leftJoinAndSelect("review.product", "product");
 
     if (productId) {
-      query.andWhere('review.productId = :productId', { productId });
+      query.andWhere("review.productId = :productId", { productId });
     }
 
     if (userId) {
-      query.andWhere('review.userId = :userId', { userId });
+      query.andWhere("review.userId = :userId", { userId });
     }
 
     if (rating) {
-      query.andWhere('review.rating = :rating', { rating });
+      query.andWhere("review.rating = :rating", { rating });
     }
 
     const total = await query.getCount();
 
     // Whitelist sortBy fields to prevent SQL injection
-    const allowedSortBy = ['createdAt', 'rating', 'helpfulCount'];
-    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
-    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+    const allowedSortBy = ["createdAt", "rating", "helpfulCount"];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : "createdAt";
+    const safeSortOrder = sortOrder === "ASC" ? "ASC" : "DESC";
 
     const reviews = await query
       .orderBy(`review.${safeSortBy}`, safeSortOrder)
@@ -360,7 +374,9 @@ export class AdminService {
   }
 
   async deleteReviewAdmin(reviewId: string) {
-    const review = await this.reviewsRepository.findOne({ where: { id: reviewId } });
+    const review = await this.reviewsRepository.findOne({
+      where: { id: reviewId },
+    });
     if (!review) {
       throw new NotFoundException(`Review ${reviewId} not found`);
     }
