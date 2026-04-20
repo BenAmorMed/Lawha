@@ -1,9 +1,11 @@
 import React from 'react';
+import Spinner from './Spinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
+  isLoading?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -11,6 +13,8 @@ const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
+  isLoading = false,
+  disabled,
   className = '',
   ...props
 }) => {
@@ -33,9 +37,17 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`}
+      disabled={disabled || isLoading}
       {...props}
     >
-      {children}
+      {isLoading ? (
+        <>
+          <Spinner size="sm" className="mr-2" />
+          {children}
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 };
