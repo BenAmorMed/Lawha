@@ -145,6 +145,11 @@ export class ImagesService {
     const mimeType = matches[1];
     const buffer = Buffer.from(matches[2], 'base64');
 
+    // Security: Limit preview size to 10MB to prevent DoS
+    if (buffer.length > 10 * 1024 * 1024) {
+      throw new BadRequestException('Preview image exceeds 10MB limit');
+    }
+
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
     const filename = `previews/preview-${timestamp}-${random}.png`;
@@ -286,7 +291,7 @@ export class ImagesService {
       return `${publicEndpoint}/${bucketName}/${filename}`;
     } catch (error) {
       console.error('MinIO upload error:', error);
-      throw new InternalServerErrorException(`Failed to upload file to storage: ${error.message}`);
+      throw new InternalServerErrorException('Failed to upload file to storage');
     }
   }
 }
