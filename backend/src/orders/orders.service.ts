@@ -32,20 +32,29 @@ export class OrdersService {
 
   async createOrder(dto: CreateOrderDto, userId?: string): Promise<OrderCreatedResponseDto> {
     // ── ÉTAPE 1 ── Recalcul du prix côté backend
-    const size = await this.productSizeRepository.findOneOrFail({ where: { id: dto.productSizeId } }).catch(() => {
-      throw new BadRequestException(`ProductSize not found: ${dto.productSizeId}`);
-    });
+    // Optimization: Fetch ProductSize with its Product and FrameOption in parallel to reduce DB roundtrips.
+    const [size, frame] = await Promise.all([
+      this.productSizeRepository.findOneOrFail({
+        where: { id: dto.productSizeId },
+        relations: ['product'],
+      }).catch(() => {
+        throw new BadRequestException(`ProductSize not found: ${dto.productSizeId}`);
+      }),
+      dto.frameOptionId
+        ? this.frameOptionRepository.findOneOrFail({ where: { id: dto.frameOptionId } }).catch(() => {
+          throw new BadRequestException(`FrameOption not found: ${dto.frameOptionId}`);
+        })
+        : Promise.resolve(null),
+    ]);
 
-    const product = await this.productRepository.findOneOrFail({ where: { id: size.productId } }).catch(() => {
+    const product = size.product;
+    if (!product) {
       throw new BadRequestException(`Product not found for size: ${dto.productSizeId}`);
-    });
+    }
 
     let total = parseFloat(product.currentPrice.toString()) + parseFloat(size.priceDelta.toString());
 
-    if (dto.frameOptionId) {
-      const frame = await this.frameOptionRepository.findOneOrFail({ where: { id: dto.frameOptionId } }).catch(() => {
-        throw new BadRequestException(`FrameOption not found: ${dto.frameOptionId}`);
-      });
+    if (frame) {
       total += parseFloat(frame.priceDelta.toString());
     }
     total = Math.round(total * 100) / 100;

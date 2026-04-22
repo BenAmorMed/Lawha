@@ -12,8 +12,8 @@ import { DataSource } from 'typeorm';
 import { EmailService } from '../email/email.service';
 
 // ── Mocks de base ──────────────────────────────────────────────────────────
-const mockSize = { id: 'size-uuid', productId: 'prod-uuid', priceDelta: 10 };
 const mockProduct = { id: 'prod-uuid', currentPrice: 49.90 };
+const mockSize = { id: 'size-uuid', productId: 'prod-uuid', priceDelta: 10, product: mockProduct };
 const mockFrame = { id: 'frame-uuid', priceDelta: 20 };
 
 const mockOrderId = 'order-uuid-1234';
