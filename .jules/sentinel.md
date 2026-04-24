@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-04-24 - [Unrestricted Base64 Upload Size]
+**Vulnerability:** The `uploadPreview` endpoint accepted arbitrary `dataUrl` strings and converted them to `Buffer` without size validation, risking memory exhaustion (DoS).
+**Learning:** Base64 strings are ~33% larger than the binary data they represent. Validating length * 0.75 provides an early exit before expensive memory allocation.
+**Prevention:** Always implement maximum size limits on encoded payloads (Base64, Hex, etc.) before decoding them into memory-intensive structures like Buffers.

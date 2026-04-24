@@ -1,4 +1,64 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
+import { BadRequestException } from '@nestjs/common';
+import { ImagesService } from './images.service';
+import { UploadedImage } from './image.entity';
 import { computeDpiReport } from './dpi.helper';
+
+jest.mock('minio', () => {
+  return {
+    Client: jest.fn().mockImplementation(() => ({
+      bucketExists: jest.fn(),
+      makeBucket: jest.fn(),
+      setBucketPolicy: jest.fn(),
+      putObject: jest.fn(),
+    })),
+  };
+});
+
+describe('ImagesService', () => {
+  let service: ImagesService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ImagesService,
+        {
+          provide: getRepositoryToken(UploadedImage),
+          useValue: {},
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, defaultValue: any) => defaultValue),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<ImagesService>(ImagesService);
+  });
+
+  describe('uploadPreview', () => {
+    it('should throw BadRequestException if dataUrl is invalid', async () => {
+      await expect(service.uploadPreview('invalid-data')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if preview exceeds 10MB', async () => {
+      // 10MB in base64 is roughly 13.3MB.
+      // Let's create a large string (15MB).
+      const largeBase64 = 'A'.repeat(15 * 1024 * 1024);
+      const dataUrl = `data:image/png;base64,${largeBase64}`;
+
+      await expect(service.uploadPreview(dataUrl)).rejects.toThrow(
+        'Preview image exceeds 10MB limit',
+      );
+    });
+  });
+});
 
 describe('checkDpi — logique DPI via computeDpiReport()', () => {
     // Case 1: 800x600 sur 50x70cm → effectiveDpi = round((600/70)*2.54) = 22 → blocked

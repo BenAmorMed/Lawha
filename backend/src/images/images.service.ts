@@ -143,7 +143,16 @@ export class ImagesService {
     }
 
     const mimeType = matches[1];
-    const buffer = Buffer.from(matches[2], 'base64');
+    const base64Data = matches[2];
+
+    // Security: Limit preview size to 10MB to prevent DoS
+    // Each base64 character represents 6 bits.
+    // Approx size in bytes is (string_length * 6) / 8 = string_length * 0.75
+    if (base64Data.length * 0.75 > 10 * 1024 * 1024) {
+      throw new BadRequestException('Preview image exceeds 10MB limit');
+    }
+
+    const buffer = Buffer.from(base64Data, 'base64');
 
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
