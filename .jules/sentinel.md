@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-04-26 - [SQL Injection in Dynamic Sorting]
+**Vulnerability:** The `AdminService.getAllOrders` method passed `sortBy` and `sortOrder` query parameters directly into TypeORM's `.orderBy()` clause. Since NestJS doesn't enforce TypeScript type unions at runtime, an attacker could inject malicious SQL.
+**Learning:** Never trust user-provided strings in `.orderBy()` or other raw query fragments. TypeScript interfaces provide no runtime protection against manipulated HTTP parameters.
+**Prevention:** Always implement explicit runtime whitelisting for dynamic database parameters. Use a hardcoded list of allowed columns and directions, defaulting to a safe value if the input is invalid.
