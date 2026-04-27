@@ -137,6 +137,12 @@ export class ImagesService {
       throw new BadRequestException('Invalid dataUrl format');
     }
 
+    // Security check: limit input size to 10MB to prevent DoS
+    const maxSize = 10 * 1024 * 1024; // 10MB base64 string
+    if (dataUrl.length > maxSize) {
+      throw new BadRequestException('Preview image data exceeds 10MB limit');
+    }
+
     const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
       throw new BadRequestException('Invalid base64 string');
@@ -286,7 +292,8 @@ export class ImagesService {
       return `${publicEndpoint}/${bucketName}/${filename}`;
     } catch (error) {
       console.error('MinIO upload error:', error);
-      throw new InternalServerErrorException(`Failed to upload file to storage: ${error.message}`);
+      // Security: Do not leak error.message (MinIO internal details) to the client
+      throw new InternalServerErrorException('Failed to upload file to storage');
     }
   }
 }
