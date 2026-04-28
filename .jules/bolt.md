@@ -7,3 +7,7 @@
 ## 2025-05-14 - Redundant Queries in Reviews Module
 **Learning:** The `ReviewsService` was performing multiple database roundtrips for operations that could be optimized into a single query or by reusing existing results. Specifically, `getProductStats` was making 3 queries (distribution, count, average) when the count and average could be calculated in-memory from the distribution. `getProductReviews` was also performing a redundant `COUNT` query despite TypeORM's `getManyAndCount` already providing the total. Additionally, the `reviews` table lacked indexes on `productId` and `userId`.
 **Action:** Consolidate redundant queries and add missing database indexes on high-frequency query paths.
+
+## 2026-04-28 - [Optimizing Order Creation]
+**Learning:** Sequential database lookups for related entities (ProductSize -> Product -> FrameOption) in a core workflow like order creation can be optimized by using TypeORM relations and Promise.all. This reduces database roundtrips and latency. Additionally, indexing foreign keys (productId) ensures efficient joins and lookups.
+**Action:** Always check if multiple "findOne" calls can be combined into one with relations or parallelized if they are independent.

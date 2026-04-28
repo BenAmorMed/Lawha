@@ -71,7 +71,15 @@ describe('OrdersService.createOrder', () => {
                 { provide: getRepositoryToken(OrderItem), useValue: {} },
                 { provide: getRepositoryToken(PrintJob), useValue: {} },
                 { provide: getRepositoryToken(Product), useValue: { findOneOrFail: jest.fn(async () => mockProduct) } },
-                { provide: getRepositoryToken(ProductSize), useValue: { findOneOrFail: jest.fn(async () => mockSize) } },
+                {
+                    provide: getRepositoryToken(ProductSize),
+                    useValue: {
+                        findOneOrFail: jest.fn(async () => ({
+                            ...mockSize,
+                            product: mockProduct,
+                        })),
+                    },
+                },
                 { provide: getRepositoryToken(FrameOption), useValue: { findOneOrFail: jest.fn(async () => mockFrame) } },
                 { provide: getDataSourceToken(), useValue: mockDataSource },
                 { provide: EmailService, useValue: mockEmailService },

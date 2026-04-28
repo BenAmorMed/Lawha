@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Product } from '../product.entity';
 
 @Entity('product_sizes')
@@ -6,6 +6,7 @@ export class ProductSize {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @Column({ type: 'uuid' })
   productId: string;
 
