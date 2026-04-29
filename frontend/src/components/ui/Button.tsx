@@ -1,16 +1,28 @@
 import React from 'react';
+import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+type BaseProps = {
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
-}
+  isLoading?: boolean;
+  href?: string;
+  className?: string;
+  children: React.ReactNode;
+};
+
+type ButtonAsButton = BaseProps & React.ButtonHTMLAttributes<HTMLButtonElement> & { href?: never };
+type ButtonAsLink = BaseProps & React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string };
+
+type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
   size = 'md',
   fullWidth = false,
+  isLoading = false,
   className = '',
   ...props
 }) => {
@@ -29,13 +41,37 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const widthStyles = fullWidth ? 'w-full' : '';
+  const combinedClassName = `${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`;
 
+  const content = (
+    <>
+      {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+      {children}
+    </>
+  );
+
+  if ('href' in props && props.href) {
+    const { href, ...anchorProps } = props as ButtonAsLink;
+    return (
+      <Link
+        href={href}
+        className={`${combinedClassName} ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
+        aria-disabled={isLoading}
+        {...anchorProps}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  const { ...buttonProps } = props as ButtonAsButton;
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`}
-      {...props}
+      className={combinedClassName}
+      disabled={isLoading || buttonProps.disabled}
+      {...buttonProps}
     >
-      {children}
+      {content}
     </button>
   );
 };
