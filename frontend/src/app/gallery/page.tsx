@@ -6,7 +6,7 @@ import { productsApi, Product, ProductSize, FrameOption } from '@/api/products-a
 import { reviewsApi } from '@/api/reviews-api';
 import { useEditorStore } from '@/store/editorStore';
 
-interface ProductWithRating extends Product {
+interface ProductWithFormattedRating extends Omit<Product, 'rating'> {
   rating?: {
     average: number;
     total: number;
@@ -14,7 +14,7 @@ interface ProductWithRating extends Product {
 }
 
 export default function GalleryPage() {
-  const [products, setProducts] = useState<ProductWithRating[]>([]);
+  const [products, setProducts] = useState<ProductWithFormattedRating[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sizes, setSizes] = useState<ProductSize[]>([]);
   const [frames, setFrames] = useState<FrameOption[]>([]);
@@ -30,25 +30,16 @@ export default function GalleryPage() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const data = await productsApi.getProducts();
+        const { products: data } = await productsApi.getProducts();
 
-        // Fetch ratings for all products in one go to avoid N+1
-        const productIds = data.map((p: any) => p.id);
-        let allStats: Record<string, { averageRating: number; totalReviews: number }> = {};
-
-        try {
-          allStats = await reviewsApi.getMultipleProductStats(productIds);
-        } catch (err) {
-          console.error('Failed to fetch multiple product stats:', err);
-        }
-
+        // The products API already returns denormalized rating and reviewsCount,
+        // so we can use them directly and avoid an extra API call to reviewsApi.getMultipleProductStats.
         const formattedProducts = data.map((p: any) => {
-          const stats = allStats[p.id] || { averageRating: 0, totalReviews: 0 };
           return {
             ...p,
             rating: {
-              average: stats.averageRating,
-              total: stats.totalReviews,
+              average: p.rating || 0,
+              total: p.reviewsCount || 0,
             },
           };
         });
@@ -74,8 +65,8 @@ export default function GalleryPage() {
     fetchProducts();
   }, []);
 
-  const handleProductChange = async (product: Product) => {
-    setSelectedProduct(product);
+  const handleProductChange = async (product: Product | ProductWithFormattedRating) => {
+    setSelectedProduct(product as Product);
     try {
       const productDetails = await productsApi.getProduct(product.id);
       setSizes(productDetails.sizes || []);

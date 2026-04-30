@@ -29,7 +29,7 @@ export const useProductsStore = create<ProductsStore>((set) => ({
   fetchProducts: async () => {
     set({ loading: true, error: null });
     try {
-      const products = await productsApi.getProducts();
+      const { products } = await productsApi.getProducts();
       set({ products, loading: false });
     } catch (error: any) {
       set({
