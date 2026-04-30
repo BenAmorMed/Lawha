@@ -22,6 +22,8 @@ export interface Product {
   basePrice: number;
   category: string;
   imageUrl?: string;
+  rating?: number;
+  reviewsCount?: number;
   isActive: boolean;
   createdAt: string;
   sizes: ProductSize[];
@@ -31,10 +33,12 @@ export interface Product {
 export interface ProductList {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   category: string;
   basePrice: number;
   imageUrl?: string;
+  rating?: number;
+  reviewsCount?: number;
   isActive: boolean;
 }
 
@@ -51,15 +55,34 @@ export interface Template {
 
 export const productsApi = {
   // Fetch all products
-  getProducts: async (): Promise<ProductList[]> => {
-    const response = await apiClient.get('/products');
-    return response.data;
+  getProducts: async (params?: {
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    search?: string;
+    sortBy?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ products: ProductList[]; total: number }> => {
+    const response = await apiClient.get('/products', { params });
+    const { products, total } = response.data;
+    return {
+      products: products.map((p: any) => ({
+        ...p,
+        basePrice: p.currentPrice,
+      })),
+      total,
+    };
   },
 
   // Fetch single product with sizes and frames
   getProduct: async (id: string): Promise<Product> => {
     const response = await apiClient.get(`/products/${id}`);
-    return response.data;
+    const data = response.data;
+    return {
+      ...data,
+      basePrice: data.currentPrice,
+    };
   },
 
   // Fetch all design templates
