@@ -137,6 +137,11 @@ export class ImagesService {
       throw new BadRequestException('Invalid dataUrl format');
     }
 
+    // Limit dataUrl size to ~10MB (base64 is ~1.33x original size) to prevent DoS
+    if (dataUrl.length > 15 * 1024 * 1024) {
+      throw new BadRequestException('Preview image is too large');
+    }
+
     const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
       throw new BadRequestException('Invalid base64 string');
@@ -256,12 +261,6 @@ export class ImagesService {
         const policy = {
           Version: '2012-10-17',
           Statement: [
-            {
-              Effect: 'Allow',
-              Principal: { AWS: ['*'] },
-              Action: ['s3:GetBucketLocation', 's3:ListBucket'],
-              Resource: [`arn:aws:s3:::${bucketName}`],
-            },
             {
               Effect: 'Allow',
               Principal: { AWS: ['*'] },
