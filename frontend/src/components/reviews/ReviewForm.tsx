@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import { reviewsApi } from '@/api/reviews-api';
+import React, { useState } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { reviewsApi } from "@/api/reviews-api";
 
 interface ReviewFormProps {
   productId: string;
@@ -17,8 +17,8 @@ export default function ReviewForm({
 }: ReviewFormProps) {
   const { user } = useAuthStore();
   const [rating, setRating] = useState(5);
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState("");
+  const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,12 +27,12 @@ export default function ReviewForm({
     setError(null);
 
     if (title.length < 5 || title.length > 100) {
-      setError('Title must be between 5 and 100 characters');
+      setError("Title must be between 5 and 100 characters");
       return;
     }
 
     if (comment.length < 10 || comment.length > 1000) {
-      setError('Comment must be between 10 and 1000 characters');
+      setError("Comment must be between 10 and 1000 characters");
       return;
     }
 
@@ -47,14 +47,15 @@ export default function ReviewForm({
       });
 
       setRating(5);
-      setTitle('');
-      setComment('');
+      setTitle("");
+      setComment("");
       onSuccess();
     } catch (err: any) {
       setError(
-        err.response?.data?.message || 'Failed to submit review. Please try again.'
+        err.response?.data?.message ||
+          "Failed to submit review. Please try again.",
       );
-      console.error('Review submit error:', err);
+      console.error("Review submit error:", err);
     } finally {
       setLoading(false);
     }
@@ -75,8 +76,13 @@ export default function ReviewForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg p-6 border border-gray-200">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">Share Your Review</h3>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white rounded-lg p-6 border border-gray-200"
+    >
+      <h3 className="text-lg font-bold text-gray-900 mb-4">
+        Share Your Review
+      </h3>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
@@ -95,8 +101,9 @@ export default function ReviewForm({
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
+              aria-label={`Rate ${star} star${star > 1 ? "s" : ""} out of 5`}
+              className={`text-3xl transition rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+                star <= rating ? "text-yellow-400" : "text-gray-300"
               }`}
             >
               ★
@@ -147,7 +154,7 @@ export default function ReviewForm({
         disabled={loading || title.length === 0 || comment.length === 0}
         className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
       >
-        {loading ? 'Submitting...' : 'Submit Review'}
+        {loading ? "Submitting..." : "Submit Review"}
       </button>
     </form>
   );
