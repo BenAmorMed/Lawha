@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { User } from '../auth/entities/user.entity';
 import { OrderItem } from './order-item.entity';
 
@@ -16,6 +16,8 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // Bolt: Index added to user_id to optimize user order history lookups
+  @Index()
   @Column({ name: 'user_id', type: 'uuid', nullable: true })
   userId: string;
 
@@ -43,6 +45,8 @@ export class Order {
   @Column({ name: 'delivered_at', type: 'timestamp', nullable: true })
   deliveredAt: Date;
 
+  // Bolt: Index added to created_at to speed up sorting and administrative list queries
+  @Index()
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
