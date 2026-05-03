@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Product } from '../product.entity';
 
 @Entity('product_sizes')
@@ -6,6 +6,8 @@ export class ProductSize {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  // Bolt: Index added to productId for optimized JOINS with the products table
+  @Index()
   @Column({ type: 'uuid' })
   productId: string;
 
