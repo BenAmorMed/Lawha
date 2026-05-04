@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
 import { ProductSize } from './entities/product-size.entity';
 import { FrameOption } from './entities/frame-option.entity';
@@ -17,9 +17,11 @@ export class Product {
   @Column({ name: 'original_price', type: 'decimal', precision: 10, scale: 2, nullable: true })
   originalPrice: number;
 
+  @Index()
   @Column({ name: 'current_price', type: 'decimal', precision: 10, scale: 2 })
   currentPrice: number;
 
+  @Index()
   @Column({ type: 'varchar', length: 100 })
   category: string;
 
@@ -47,6 +49,7 @@ export class Product {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
+  @Index()
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
