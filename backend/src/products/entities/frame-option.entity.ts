@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Product } from '../product.entity';
 
 @Entity('frame_options')
@@ -6,6 +6,7 @@ export class FrameOption {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Index()
     @Column({ type: 'uuid' })
     productId: string;
 
