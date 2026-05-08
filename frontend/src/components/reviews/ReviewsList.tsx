@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { reviewsApi, Review } from '@/api/reviews-api';
+import Rating from '@/components/ui/Rating';
 
 interface ReviewsListProps {
   productId: string;
@@ -62,21 +63,6 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
     }
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span
-            key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
-          >
-            ★
-          </span>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-8">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Customer Reviews</h2>
@@ -92,7 +78,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                 </span>
                 <span className="text-gray-600">out of 5</span>
               </div>
-              <div className="mb-2">{renderStars(Math.round(stats.averageRating))}</div>
+              <div className="mb-2">
+                <Rating rating={Math.round(stats.averageRating)} showCount={false} />
+              </div>
               <p className="text-sm text-gray-600">
                 Based on {stats.totalReviews} review
                 {stats.totalReviews !== 1 ? 's' : ''}
@@ -113,9 +101,14 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                     <span className="text-sm text-gray-600 min-w-fit">
                       {stars} star
                     </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-yellow-400 h-2 rounded-full"
+                        role="progressbar"
+                        aria-valuenow={Math.round(percentage)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${stars} star reviews percentage`}
+                        className="bg-star h-2 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -150,9 +143,10 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="text-center py-8" role="status">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="text-gray-600 mt-2">Loading reviews...</p>
+          <span className="sr-only">Loading...</span>
         </div>
       )}
 
@@ -177,7 +171,7 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <div>{renderStars(review.rating)}</div>
+                    <Rating rating={review.rating} showCount={false} />
                     {review.verifiedPurchase && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                         Verified Purchase
@@ -196,7 +190,8 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
               <button
                 onClick={() => handleMarkHelpful(review.id)}
-                className="text-sm text-gray-600 hover:text-gray-900 border-b border-gray-300 hover:border-gray-900"
+                className="text-sm text-gray-600 hover:text-primary border-b border-gray-300 hover:border-primary transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 outline-none rounded px-1"
+                aria-label={`Mark review titled "${review.title}" as helpful`}
               >
                 👍 Helpful ({review.helpfulCount})
               </button>
