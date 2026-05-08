@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from '../orders/order.entity';
@@ -38,10 +43,15 @@ export class AdminService {
 
     const total = await query.getCount();
 
+    // Whitelist sortBy fields to prevent SQL injection
+    const allowedSortBy = ['createdAt', 'total', 'status'];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
+    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
     const orders = await query
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.items', 'items')
-      .orderBy(`order.${sortBy}`, sortOrder)
+      .orderBy(`order.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
       .getMany();
@@ -117,7 +127,7 @@ export class AdminService {
     ];
 
     if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
+      throw new BadRequestException(`Invalid status: ${status}`);
     }
 
     order.status = status as OrderStatus;
@@ -241,7 +251,7 @@ export class AdminService {
     ];
 
     if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
+      throw new BadRequestException(`Invalid status: ${status}`);
     }
 
     const updatedOrders = orders.map((order) => {
@@ -276,22 +286,26 @@ export class AdminService {
   }
 
   async approveOrder(orderId: string) {
-    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
-    order.status = 'printing' as any;
+    order.status = OrderStatus.PRINTING;
     await this.ordersRepository.save(order);
     this.logger.log(`Order ${orderId} approved for printing`);
     return { id: order.id, status: order.status };
   }
 
   async rejectOrder(orderId: string, reason?: string) {
-    const order = await this.ordersRepository.findOne({ where: { id: orderId } });
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException(`Order ${orderId} not found`);
     }
-    order.status = 'cancelled' as any;
+    order.status = OrderStatus.CANCELLED;
     await this.ordersRepository.save(order);
     this.logger.log(`Order ${orderId} rejected. Reason: ${reason || 'none'}`);
     return { id: order.id, status: order.status, reason };
