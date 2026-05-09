@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Rating from './ui/Rating';
@@ -23,6 +23,16 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddToCart = () => {
+    setIsAdding(true);
+    // Simulate API call for adding to cart
+    setTimeout(() => {
+      setIsAdding(false);
+    }, 1000);
+  };
+
   return (
     <div className="group flex flex-col h-full border border-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white">
       {/* Image Container */}
@@ -79,7 +89,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 Customize
               </Button>
             </Link>
-            <Button variant="secondary" size="sm">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleAddToCart}
+              isLoading={isAdding}
+              aria-label={`Add ${product.name} to cart`}
+            >
               Add to Cart
             </Button>
           </div>
