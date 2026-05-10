@@ -107,15 +107,10 @@ export class ReviewsService {
       query.orderBy('review.createdAt', 'DESC');
     }
 
-    const [reviews, total] = await query.getManyAndCount();
-
-    // Calculate global product rating average and total count in a single query
-    const ratingQuery = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg_rating')
-      .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
+    const [[reviews, total], productRating] = await Promise.all([
+      query.getManyAndCount(),
+      this.getProductStats(productId),
+    ]);
 
     return {
       reviews: reviews.map((review) => ({
@@ -134,10 +129,7 @@ export class ReviewsService {
         offset,
         pages: Math.ceil(Number(total) / limit),
       },
-      productRating: {
-        average: parseFloat(ratingQuery?.avg_rating || 0),
-        total: parseInt(ratingQuery?.total_reviews || 0, 10),
-      },
+      productRating,
     };
   }
 

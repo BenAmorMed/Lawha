@@ -84,7 +84,7 @@ describe('ReviewsService', () => {
   });
 
   describe('getProductReviews', () => {
-    it('should return reviews and correct total from getManyAndCount', async () => {
+    it('should return reviews and consolidated productRating from getProductStats', async () => {
       const mockReviews = [
         { id: '1', rating: 5, title: 'Good', comment: 'Nice', user: { email: 'test@example.com' } },
       ];
@@ -99,22 +99,26 @@ describe('ReviewsService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
       };
 
-      const ratingQueryBuilder: any = {
+      const mockStats = [{ rating: '5', count: '1' }];
+      const statsQueryBuilder: any = {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '5', total_reviews: '1' }),
+        groupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(mockStats),
       };
 
       jest.spyOn(reviewsRepository, 'createQueryBuilder')
         .mockReturnValueOnce(queryBuilder)
-        .mockReturnValueOnce(ratingQueryBuilder);
+        .mockReturnValueOnce(statsQueryBuilder);
 
       const result = await service.getProductReviews('product-1');
 
       expect(result.pagination.total).toBe(1);
-      expect(result.productRating.total).toBe(1);
-      expect(result.productRating.average).toBe(5);
+      expect(result.productRating.totalReviews).toBe(1);
+      expect(result.productRating.averageRating).toBe(5);
+      expect(result.productRating.ratingDistribution).toEqual({ '5': 1 });
       expect(result.reviews[0].id).toBe('1');
     });
   });
