@@ -21,7 +21,6 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
   useEffect(() => {
     fetchReviews();
-    fetchStats();
   }, [productId, sortBy, onReviewAdded]);
 
   const fetchReviews = async () => {
@@ -29,27 +28,14 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       setLoading(true);
       const data = await reviewsApi.getProductReviews(productId, 10, 0, sortBy);
       setReviews(data.reviews);
-      if (data.productRating) {
-        setStats((prev) => ({
-          ...prev,
-          averageRating: data.productRating.average,
-          totalReviews: data.productRating.total,
-        }));
+      if (data.productStats) {
+        setStats(data.productStats);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load reviews');
       console.error('Fetch reviews error:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const data = await reviewsApi.getProductStats(productId);
-      setStats(data);
-    } catch (err) {
-      console.error('Fetch stats error:', err);
     }
   };
 
