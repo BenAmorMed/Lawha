@@ -40,7 +40,11 @@ export const reviewsApi = {
   ): Promise<{
     reviews: Review[];
     pagination: { total: number; limit: number; offset: number; pages: number };
-    productRating: { average: number; total: number };
+    productRating: {
+      average: number;
+      total: number;
+      ratingDistribution: Record<number, number>;
+    };
   }> => {
     const params = new URLSearchParams({
       limit: limit.toString(),
