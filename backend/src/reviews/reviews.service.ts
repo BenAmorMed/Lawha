@@ -92,6 +92,10 @@ export class ReviewsService {
     offset: number = 0,
     sortBy: 'helpful' | 'recent' | 'rating' = 'recent',
   ) {
+    // Optimization: Fetch consolidated product stats first (1 query)
+    const stats = await this.getProductStats(productId);
+    const total = stats.totalReviews;
+
     const query = this.reviewsRepository
       .createQueryBuilder('review')
       .where('review.productId = :productId', { productId })
@@ -107,15 +111,9 @@ export class ReviewsService {
       query.orderBy('review.createdAt', 'DESC');
     }
 
-    const [reviews, total] = await query.getManyAndCount();
-
-    // Calculate global product rating average and total count in a single query
-    const ratingQuery = await this.reviewsRepository
-      .createQueryBuilder('review')
-      .select('AVG(review.rating)', 'avg_rating')
-      .addSelect('COUNT(review.id)', 'total_reviews')
-      .where('review.productId = :productId', { productId })
-      .getRawOne();
+    // Optimization: Since we already have the total count from stats,
+    // we use getMany() instead of getManyAndCount() to avoid a redundant COUNT query.
+    const reviews = await query.getMany();
 
     return {
       reviews: reviews.map((review) => ({
@@ -132,11 +130,12 @@ export class ReviewsService {
         total,
         limit,
         offset,
-        pages: Math.ceil(Number(total) / limit),
+        pages: Math.ceil(total / limit),
       },
       productRating: {
-        average: parseFloat(ratingQuery?.avg_rating || 0),
-        total: parseInt(ratingQuery?.total_reviews || 0, 10),
+        average: stats.averageRating,
+        total: stats.totalReviews,
+        ratingDistribution: stats.ratingDistribution,
       },
     };
   }

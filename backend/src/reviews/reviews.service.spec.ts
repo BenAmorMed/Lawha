@@ -84,37 +84,42 @@ describe('ReviewsService', () => {
   });
 
   describe('getProductReviews', () => {
-    it('should return reviews and correct total from getManyAndCount', async () => {
+    it('should return consolidated reviews and statistics', async () => {
       const mockReviews = [
         { id: '1', rating: 5, title: 'Good', comment: 'Nice', user: { email: 'test@example.com' } },
       ];
-      const mockTotal = 1;
+      const mockStats = [
+        { rating: '5', count: '1' },
+      ];
 
-      const queryBuilder: any = {
+      const statsQueryBuilder: any = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(mockStats),
+      };
+
+      const reviewsQueryBuilder: any = {
         where: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
-        getManyAndCount: jest.fn().mockResolvedValue([mockReviews, mockTotal]),
-      };
-
-      const ratingQueryBuilder: any = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg_rating: '5', total_reviews: '1' }),
+        getMany: jest.fn().mockResolvedValue(mockReviews),
       };
 
       jest.spyOn(reviewsRepository, 'createQueryBuilder')
-        .mockReturnValueOnce(queryBuilder)
-        .mockReturnValueOnce(ratingQueryBuilder);
+        .mockReturnValueOnce(statsQueryBuilder) // For getProductStats
+        .mockReturnValueOnce(reviewsQueryBuilder); // For getMany reviews
 
       const result = await service.getProductReviews('product-1');
 
       expect(result.pagination.total).toBe(1);
       expect(result.productRating.total).toBe(1);
       expect(result.productRating.average).toBe(5);
+      expect(result.productRating.ratingDistribution).toEqual({ '5': 1 });
       expect(result.reviews[0].id).toBe('1');
     });
   });
