@@ -10,7 +10,11 @@ interface RatingProps {
 const Rating: React.FC<RatingProps> = ({ rating, count, showCount = true }) => {
   return (
     <div className="flex items-center gap-1">
-      <div className="flex items-center">
+      <div
+        className="flex items-center"
+        role="img"
+        aria-label={`${rating} out of 5 stars`}
+      >
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
@@ -18,6 +22,7 @@ const Rating: React.FC<RatingProps> = ({ rating, count, showCount = true }) => {
             className={`${
               star <= rating ? 'fill-star text-star' : 'fill-gray-200 text-gray-200'
             }`}
+            aria-hidden="true"
           />
         ))}
       </div>

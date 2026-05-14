@@ -98,6 +98,7 @@ export default function ReviewForm({
               className={`text-3xl transition ${
                 star <= rating ? 'text-yellow-400' : 'text-gray-300'
               }`}
+              aria-label={`Rate ${star} out of 5 stars`}
             >
               ★
             </button>
