@@ -2,6 +2,7 @@ import { IsEmail, IsString, MinLength, MaxLength, IsOptional } from 'class-valid
 
 export class RegisterDto {
   @IsEmail()
+  @MaxLength(255)
   email: string;
 
   @IsString()

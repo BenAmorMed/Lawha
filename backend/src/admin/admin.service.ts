@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from '../orders/order.entity';
@@ -36,15 +36,18 @@ export class AdminService {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
+    // Whitelist sortBy and sortOrder to prevent SQL injection
+    const allowedSortBy = ['createdAt', 'total', 'status'];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
+    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const orders = await query
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.items', 'items')
-      .orderBy(`order.${sortBy}`, sortOrder)
+      .orderBy(`order.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -117,7 +120,7 @@ export class AdminService {
     ];
 
     if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
+      throw new BadRequestException(`Invalid status: ${status}`);
     }
 
     order.status = status as OrderStatus;
@@ -241,7 +244,7 @@ export class AdminService {
     ];
 
     if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
+      throw new BadRequestException(`Invalid status: ${status}`);
     }
 
     const updatedOrders = orders.map((order) => {
@@ -335,18 +338,16 @@ export class AdminService {
       query.andWhere('review.rating = :rating', { rating });
     }
 
-    const total = await query.getCount();
-
     // Whitelist sortBy fields to prevent SQL injection
     const allowedSortBy = ['createdAt', 'rating', 'helpfulCount'];
     const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
     const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const reviews = await query
+    const [reviews, total] = await query
       .orderBy(`review.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: reviews,
