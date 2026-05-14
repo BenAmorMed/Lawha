@@ -133,6 +133,11 @@ export class ImagesService {
   }
 
   async uploadPreview(dataUrl: string): Promise<{ previewUrl: string }> {
+    // Security check: limit dataUrl length to prevent memory exhaustion DoS (approx 15MB)
+    if (dataUrl && dataUrl.length > 15 * 1024 * 1024) {
+      throw new BadRequestException('Preview image data is too large');
+    }
+
     if (!dataUrl || !dataUrl.startsWith('data:image/')) {
       throw new BadRequestException('Invalid dataUrl format');
     }
@@ -259,7 +264,7 @@ export class ImagesService {
             {
               Effect: 'Allow',
               Principal: { AWS: ['*'] },
-              Action: ['s3:GetBucketLocation', 's3:ListBucket'],
+              Action: ['s3:GetBucketLocation'],
               Resource: [`arn:aws:s3:::${bucketName}`],
             },
             {
