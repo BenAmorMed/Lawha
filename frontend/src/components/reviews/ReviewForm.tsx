@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Star, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import Button from '@/components/ui/Button';
 
 interface ReviewFormProps {
   productId: string;
@@ -62,14 +64,11 @@ export default function ReviewForm({
 
   if (!user) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-        <p className="text-blue-900 mb-4">Sign in to leave a review</p>
-        <a
-          href="/login"
-          className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
+      <div className="bg-secondary border border-gray-200 rounded-lg p-6 text-center">
+        <p className="text-dark mb-4">Sign in to leave a review</p>
+        <Button href="/login" variant="primary">
           Sign In
-        </a>
+        </Button>
       </div>
     );
   }
@@ -95,11 +94,14 @@ export default function ReviewForm({
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              aria-label={`Rate ${star} out of 5 stars`}
+              className="transition-transform hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
             >
-              ★
+              <Star
+                className={`w-8 h-8 ${
+                  star <= rating ? 'fill-star text-star' : 'text-gray-300'
+                }`}
+              />
             </button>
           ))}
         </div>
@@ -142,13 +144,20 @@ export default function ReviewForm({
         </p>
       </div>
 
-      <button
+      <Button
         type="submit"
+        fullWidth
         disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
       >
-        {loading ? 'Submitting...' : 'Submit Review'}
-      </button>
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Submitting...
+          </>
+        ) : (
+          'Submit Review'
+        )}
+      </Button>
     </form>
   );
 }
