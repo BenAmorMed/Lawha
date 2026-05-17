@@ -30,21 +30,26 @@ export class AdminService {
       sortOrder = 'DESC',
     } = filters;
 
+    // Optimization: Use a single query with getManyAndCount()
+    // and loadRelationCountAndMap to avoid loading full item entities (and their designJson)
     const query = this.ordersRepository.createQueryBuilder('order');
 
     if (status) {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
+    // Whitelist sortBy and sortOrder for security and to prevent SQL injection
+    const allowedSortBy = ['createdAt', 'total', 'status'];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
+    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const orders = await query
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
-      .leftJoinAndSelect('order.items', 'items')
-      .orderBy(`order.${sortBy}`, sortOrder)
+      .loadRelationCountAndMap('order.itemsCount', 'order.items')
+      .orderBy(`order.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -53,7 +58,7 @@ export class AdminService {
         userId: order.userId,
         status: order.status,
         total: order.total,
-        itemsCount: order.items?.length || 0,
+        itemsCount: (order as any).itemsCount || 0,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         trackingNumber: order.trackingNumber,
@@ -151,43 +156,46 @@ export class AdminService {
   }
 
   async getOrderAnalytics() {
-    // Total orders count
-    const totalOrders = await this.ordersRepository.count();
+    // Optimization: Consolidate 6 database roundtrips into 2.
 
-    // Orders by status
-    const ordersByStatus = await this.ordersRepository
+    // Query 1: Overall summary and status breakdown
+    const summaryStats = await this.ordersRepository
       .createQueryBuilder('order')
       .select('order.status', 'status')
       .addSelect('COUNT(order.id)', 'count')
+      .addSelect('SUM(order.total)', 'totalRevenue')
+      .addSelect('AVG(order.total)', 'avgOrderValue')
       .groupBy('order.status')
       .getRawMany();
 
-    // Revenue (total amount from completed orders)
-    const revenue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
-      })
-      .getRawOne();
+    let totalOrders = 0;
+    let totalRevenue = 0;
+    let totalPointsForAvg = 0; // To calculate weighted average
+    const statusBreakdown = {};
 
-    // Average order value
-    const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
-      .getRawOne();
+    summaryStats.forEach(stat => {
+      const count = parseInt(stat.count, 10);
+      const revenue = parseFloat(stat.totalRevenue || 0);
+      const avgValue = parseFloat(stat.avgOrderValue || 0);
 
-    // Recent orders (last 7 days)
+      totalOrders += count;
+      totalPointsForAvg += avgValue * count;
+
+      if (['shipped', 'delivered'].includes(stat.status)) {
+        totalRevenue += revenue;
+      }
+
+      statusBreakdown[stat.status] = count;
+    });
+
+    const overallAvgValue = totalOrders > 0 ? (totalPointsForAvg / totalOrders) : 0;
+
+    // Query 2: Last 7 days statistics (count and daily breakdown)
     const sevenDaysAgo = new Date();
+    sevenDaysAgo.setHours(0, 0, 0, 0);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const recentOrders = await this.ordersRepository
-      .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .getCount();
-
-    // Orders by day (last 7 days)
-    const ordersByDay = await this.ordersRepository
+    const recentStats = await this.ordersRepository
       .createQueryBuilder('order')
       .select('DATE(order.createdAt)', 'date')
       .addSelect('COUNT(order.id)', 'count')
@@ -196,24 +204,25 @@ export class AdminService {
       .orderBy('DATE(order.createdAt)', 'ASC')
       .getRawMany();
 
+    let ordersLast7Days = 0;
+    const ordersByDay = recentStats.map(item => {
+      const count = parseInt(item.count, 10);
+      ordersLast7Days += count;
+      return {
+        date: item.date,
+        count: count
+      };
+    });
+
     return {
       summary: {
         total_orders: totalOrders,
-        revenue: parseFloat(revenue?.total || 0),
-        average_order_value: parseFloat(avgValue?.average || 0),
-        orders_last_7_days: recentOrders,
+        revenue: parseFloat(totalRevenue.toFixed(2)),
+        average_order_value: parseFloat(overallAvgValue.toFixed(2)),
+        orders_last_7_days: ordersLast7Days,
       },
-      status_breakdown: ordersByStatus.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.status]: parseInt(item.count, 10),
-        }),
-        {},
-      ),
-      orders_by_day: ordersByDay.map((item) => ({
-        date: item.date,
-        count: parseInt(item.count, 10),
-      })),
+      status_breakdown: statusBreakdown,
+      orders_by_day: ordersByDay,
     };
   }
 
