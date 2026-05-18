@@ -54,15 +54,13 @@ export default function ProductReviewsPage() {
           {/* Main Content */}
           <div className="md:col-span-2">
             {/* Review Form */}
-            {user && (
-              <div className="mb-12">
-                <ReviewForm
-                  productId={productId}
-                  orderId={orderId}
-                  onSuccess={() => setReviewAdded(!reviewAdded)}
-                />
-              </div>
-            )}
+            <div className="mb-12">
+              <ReviewForm
+                productId={productId}
+                orderId={orderId}
+                onSuccess={() => setReviewAdded(!reviewAdded)}
+              />
+            </div>
 
             {/* Reviews List */}
             <ReviewsList productId={productId} onReviewAdded={() => setReviewAdded(!reviewAdded)} />
