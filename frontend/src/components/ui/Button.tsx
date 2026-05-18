@@ -1,9 +1,15 @@
 import React from 'react';
 
+import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
+
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
+  isLoading?: boolean;
+  href?: string;
+  as?: 'button' | 'a';
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -11,7 +17,11 @@ const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
+  isLoading = false,
+  href,
+  as = 'button',
   className = '',
+  disabled,
   ...props
 }) => {
   const baseStyles = 'inline-flex items-center justify-center font-semibold transition-colors duration-200 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -30,12 +40,32 @@ const Button: React.FC<ButtonProps> = ({
 
   const widthStyles = fullWidth ? 'w-full' : '';
 
+  const content = (
+    <>
+      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {children}
+    </>
+  );
+
+  const commonProps = {
+    className: `${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`,
+    disabled: disabled || isLoading,
+  };
+
+  if (href && as === 'a') {
+    return (
+      <Link href={href} className={commonProps.className} {...(props as any)}>
+        {content}
+      </Link>
+    );
+  }
+
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`}
+      {...commonProps}
       {...props}
     >
-      {children}
+      {content}
     </button>
   );
 };
