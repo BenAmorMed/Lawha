@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import Button from '../ui/Button';
 
 interface ReviewFormProps {
   productId: string;
@@ -17,6 +20,7 @@ export default function ReviewForm({
 }: ReviewFormProps) {
   const { user } = useAuthStore();
   const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,14 +66,14 @@ export default function ReviewForm({
 
   if (!user) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-        <p className="text-blue-900 mb-4">Sign in to leave a review</p>
-        <a
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 text-center">
+        <p className="text-primary-dark font-medium mb-4">Sign in to leave a review</p>
+        <Link
           href="/login"
-          className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          className="inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
         >
           Sign In
-        </a>
+        </Link>
       </div>
     );
   }
@@ -95,11 +99,20 @@ export default function ReviewForm({
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              className="p-1 transition-transform hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+              aria-label={`Rate ${star} out of 5 stars`}
+              aria-pressed={star <= rating}
             >
-              ★
+              <Star
+                size={32}
+                className={`transition-colors ${
+                  star <= (hoverRating || rating)
+                    ? 'fill-star text-star'
+                    : 'fill-gray-100 text-gray-300'
+                }`}
+              />
             </button>
           ))}
         </div>
@@ -142,13 +155,14 @@ export default function ReviewForm({
         </p>
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
+        fullWidth
+        variant="primary"
       >
         {loading ? 'Submitting...' : 'Submit Review'}
-      </button>
+      </Button>
     </form>
   );
 }
