@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-05-23 - [SQL Injection in TypeORM OrderBy]
+**Vulnerability:** The `AdminService.getAllOrders` method used string interpolation in the `orderBy` clause of TypeORM's QueryBuilder, allowing arbitrary SQL injection via unsanitized user input in the `sortBy` and `sortOrder` parameters.
+**Learning:** TypeORM's `orderBy` method does not automatically parameterize or escape column/alias names when passed as a string, unlike `where` clauses which use placeholders.
+**Prevention:** Always implement a strict runtime whitelist for dynamic column names and sort orders before passing them to `orderBy`. Use manual validation in services to ensure only allowed strings reach the query builder.
