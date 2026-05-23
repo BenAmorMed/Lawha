@@ -1,0 +1,14 @@
+
+> canvas-platform-frontend@0.1.0 dev /app/frontend
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 2.9s
+ ○ Compiling /products/[id]/reviews ...
+ ✓ Compiled /products/[id]/reviews in 5.4s (756 modules)
+ GET /products/1/reviews 200 in 6268ms
+ GET /products/1/reviews 200 in 136ms
