@@ -36,15 +36,20 @@ export class AdminService {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
-
-    const orders = await query
+    /**
+     * PERFORMANCE OPTIMIZATION:
+     * 1. Replaced separate getCount() and getMany() with getManyAndCount() to reduce DB roundtrips from 2 to 1.
+     * 2. Used loadRelationCountAndMap instead of leftJoinAndSelect for order.items.
+     *    This avoids loading full OrderItem entities (which contain large designJson blobs),
+     *    significantly reducing database I/O, memory usage, and network bandwidth.
+     */
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
-      .leftJoinAndSelect('order.items', 'items')
+      .loadRelationCountAndMap('order.itemsCount', 'order.items')
       .orderBy(`order.${sortBy}`, sortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -53,7 +58,7 @@ export class AdminService {
         userId: order.userId,
         status: order.status,
         total: order.total,
-        itemsCount: order.items?.length || 0,
+        itemsCount: order.itemsCount || 0,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         trackingNumber: order.trackingNumber,
