@@ -36,15 +36,15 @@ export class AdminService {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
-
-    const orders = await query
+    // Optimization: Use getManyAndCount to reduce database roundtrips
+    // and loadRelationCountAndMap to avoid fetching large designJson blobs from items
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
-      .leftJoinAndSelect('order.items', 'items')
+      .loadRelationCountAndMap('order.itemsCount', 'order.items')
       .orderBy(`order.${sortBy}`, sortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -53,7 +53,7 @@ export class AdminService {
         userId: order.userId,
         status: order.status,
         total: order.total,
-        itemsCount: order.items?.length || 0,
+        itemsCount: order.itemsCount || 0,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         trackingNumber: order.trackingNumber,
@@ -335,18 +335,17 @@ export class AdminService {
       query.andWhere('review.rating = :rating', { rating });
     }
 
-    const total = await query.getCount();
-
     // Whitelist sortBy fields to prevent SQL injection
     const allowedSortBy = ['createdAt', 'rating', 'helpfulCount'];
     const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
     const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const reviews = await query
+    // Optimization: Use getManyAndCount to reduce database roundtrips
+    const [reviews, total] = await query
       .orderBy(`review.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: reviews,
