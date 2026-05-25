@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Star } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
 
@@ -17,6 +18,7 @@ export default function ReviewForm({
 }: ReviewFormProps) {
   const { user } = useAuthStore();
   const [rating, setRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -62,11 +64,11 @@ export default function ReviewForm({
 
   if (!user) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-        <p className="text-blue-900 mb-4">Sign in to leave a review</p>
+      <div className="bg-primary/5 border border-primary/10 rounded-lg p-6 text-center">
+        <p className="text-primary-dark font-medium mb-4">Sign in to leave a review</p>
         <a
           href="/login"
-          className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          className="inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-semibold"
         >
           Sign In
         </a>
@@ -89,17 +91,32 @@ export default function ReviewForm({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Rating
         </label>
-        <div className="flex gap-2">
+        <div
+          className="flex gap-2"
+          onMouseLeave={() => setHoverRating(0)}
+          role="radiogroup"
+          aria-label="Rate this product"
+        >
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              onMouseEnter={() => setHoverRating(star)}
+              className="transition-transform hover:scale-110 active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm outline-none"
+              role="radio"
+              aria-checked={star === rating}
+              aria-label={`Rate ${star} out of 5 stars`}
             >
-              ★
+              <Star
+                size={32}
+                className={`${
+                  star <= (hoverRating || rating)
+                    ? 'fill-star text-star'
+                    : 'text-gray-300'
+                }`}
+                aria-hidden="true"
+              />
             </button>
           ))}
         </div>
