@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, Index } from 'typeorm';
 import { Order } from './order.entity';
 import { Product } from '../products/product.entity';
 import { ProductSize } from '../products/entities/product-size.entity';
@@ -9,9 +9,18 @@ export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  /**
+   * Performance: Added index on order_id to speed up order retrieval and joins.
+   * Reduces lookup time from O(N) to O(log N).
+   */
+  @Index()
   @Column({ name: 'order_id', type: 'uuid' })
   orderId: string;
 
+  /**
+   * Performance: Added index on product_id to optimize product-specific queries and analytics.
+   */
+  @Index()
   @Column({ name: 'product_id', type: 'uuid' })
   productId: string;
 
