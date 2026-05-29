@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Star } from 'lucide-react';
 import { reviewsApi, Review } from '@/api/reviews-api';
 
 interface ReviewsListProps {
@@ -64,14 +65,14 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
   const renderStars = (rating: number) => {
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-0.5" role="img" aria-label={`Rating: ${rating} out of 5 stars`}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <span
+          <Star
             key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
-          >
-            ★
-          </span>
+            size={16}
+            className={star <= rating ? 'text-star fill-star' : 'text-gray-200 fill-transparent'}
+            aria-hidden="true"
+          />
         ))}
       </div>
     );
@@ -113,9 +114,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                     <span className="text-sm text-gray-600 min-w-fit">
                       {stars} star
                     </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2">
                       <div
-                        className="bg-yellow-400 h-2 rounded-full"
+                        className="bg-star h-2 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -150,9 +151,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-600 mt-2">Loading reviews...</p>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+          <p className="text-gray-500 mt-4 font-medium">Loading reviews...</p>
         </div>
       )}
 
