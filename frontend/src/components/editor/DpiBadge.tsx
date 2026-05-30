@@ -13,21 +13,21 @@ const CONFIG = {
         bg: 'bg-green-50',
         border: 'border-green-400',
         text: 'text-green-700',
-        label: 'Qualité excellente',
+        label: 'Excellent quality',
     },
     warning: {
         Icon: AlertTriangle,
         bg: 'bg-orange-50',
         border: 'border-orange-400',
         text: 'text-orange-700',
-        label: 'Qualité suffisante',
+        label: 'Sufficient quality',
     },
     blocked: {
         Icon: XCircle,
         bg: 'bg-red-50',
         border: 'border-red-400',
         text: 'text-red-700',
-        label: 'Résolution trop faible',
+        label: 'Resolution too low',
     },
 };
 
