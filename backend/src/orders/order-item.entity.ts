@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, Index } from 'typeorm';
 import { Order } from './order.entity';
 import { Product } from '../products/product.entity';
 import { ProductSize } from '../products/entities/product-size.entity';
@@ -9,9 +9,11 @@ export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @Column({ name: 'order_id', type: 'uuid' })
   orderId: string;
 
+  @Index()
   @Column({ name: 'product_id', type: 'uuid' })
   productId: string;
 

@@ -7,3 +7,7 @@
 ## 2025-05-14 - Redundant Queries in Reviews Module
 **Learning:** The `ReviewsService` was performing multiple database roundtrips for operations that could be optimized into a single query or by reusing existing results. Specifically, `getProductStats` was making 3 queries (distribution, count, average) when the count and average could be calculated in-memory from the distribution. `getProductReviews` was also performing a redundant `COUNT` query despite TypeORM's `getManyAndCount` already providing the total. Additionally, the `reviews` table lacked indexes on `productId` and `userId`.
 **Action:** Consolidate redundant queries and add missing database indexes on high-frequency query paths.
+
+## 2026-05-30 - Admin Dashboard Optimization
+**Learning:** Loading full relations in list views can be a major performance bottleneck when related entities contain large JSON blobs (like `designJson` in `OrderItem`). TypeORM's `loadRelationCountAndMap` is a highly efficient alternative when only the count is needed.
+**Action:** Use `loadRelationCountAndMap` and `getManyAndCount()` for list views with counts to minimize database roundtrips and memory overhead.
