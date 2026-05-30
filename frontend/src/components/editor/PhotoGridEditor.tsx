@@ -197,14 +197,16 @@ export const PhotoGridEditor: React.FC<PhotoGridEditorProps> = ({
                                         <button
                                             className="bg-white text-gray-700 rounded-full p-1.5 hover:bg-red-50 hover:text-red-600 transition-colors"
                                             onClick={(e) => { e.stopPropagation(); handleRemove(slot.id); }}
-                                            title="Supprimer"
+                                            title="Remove"
+                                            aria-label="Remove photo"
                                         >
                                             <X className="w-3.5 h-3.5" />
                                         </button>
                                         <button
                                             className="bg-white text-gray-700 rounded-full p-1.5 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                             onClick={(e) => { e.stopPropagation(); fileInputRefs.current[slot.id]?.click(); }}
-                                            title="Remplacer"
+                                            title="Replace"
+                                            aria-label="Replace photo"
                                         >
                                             <Upload className="w-3.5 h-3.5" />
                                         </button>
@@ -212,7 +214,7 @@ export const PhotoGridEditor: React.FC<PhotoGridEditorProps> = ({
                                     {/* DPI indicator */}
                                     {(isDpiBlocked || isDpiWarning) && (
                                         <div className={`absolute bottom-0.5 left-0.5 right-0.5 text-center text-[8px] font-bold px-1 py-0.5 rounded ${isDpiBlocked ? 'bg-red-500 text-white' : 'bg-yellow-400 text-yellow-900'}`}>
-                                            {isDpiBlocked ? '⚠ Résolution faible' : '~ Qualité moyenne'}
+                                            {isDpiBlocked ? '⚠ Low resolution' : '~ Medium quality'}
                                         </div>
                                     )}
                                 </div>
@@ -240,12 +242,12 @@ export const PhotoGridEditor: React.FC<PhotoGridEditorProps> = ({
             {/* Tips */}
             {filledCount < totalCount && (
                 <p className="text-xs text-gray-400 text-center">
-                    Cliquez sur une cellule ou glissez une photo pour la placer.
+                    Click on a cell or drag a photo to place it.
                 </p>
             )}
             {filledCount === totalCount && (
                 <div className="flex items-center justify-center gap-2 text-green-600 text-sm font-medium">
-                    <span>✅ Toutes les photos sont placées !</span>
+                    <span>✅ All photos are placed!</span>
                 </div>
             )}
         </div>

@@ -89,11 +89,11 @@ export default function EditorPage() {
 
   const checkoutMessage = () => {
     if (isGridTemplate) {
-      if (gridFilledCount < 9) return `${9 - gridFilledCount} photo(s) manquante(s) dans la grille`;
+      if (gridFilledCount < 9) return `${9 - gridFilledCount} photo(s) missing in the grid`;
       return null;
     }
-    if (hasBlockedDpi) return 'Qualité insuffisante sur certaines photos';
-    if (missing.length > 0) return `Photos manquantes : ${missing.join(', ')}`;
+    if (hasBlockedDpi) return 'Insufficient quality on some photos';
+    if (missing.length > 0) return `Missing photos: ${missing.join(', ')}`;
     return null;
   };
 
@@ -110,8 +110,8 @@ export default function EditorPage() {
       <header className="bg-white shadow">
         <div className="max-w-full mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Éditeur Lawha</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Personnalisez votre impression</p>
+            <h1 className="text-xl font-bold text-gray-900">Lawha Editor</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Personalize your print</p>
           </div>
           {selectedTemplate && (
             <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 rounded-lg px-3 py-1.5">
@@ -223,13 +223,13 @@ export default function EditorPage() {
                   {canOrder ? (
                     <div className="flex items-center gap-2 text-green-700 text-sm">
                       <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                      <span>Tout est prêt pour commander</span>
+                      <span>Everything is ready to order</span>
                     </div>
                   ) : (
                     <div className="flex items-start gap-2 text-gray-500 text-sm">
                       <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-orange-400" />
                       <span className="truncate">
-                        {checkoutMessage() ?? 'Complétez votre design pour commander'}
+                        {checkoutMessage() ?? 'Complete your design to order'}
                       </span>
                     </div>
                   )}
@@ -244,7 +244,7 @@ export default function EditorPage() {
                   onClick={handleOrder}
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  Commander →
+                  Order →
                 </button>
               </div>
             </div>

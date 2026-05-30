@@ -64,7 +64,7 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
 
                 addUploadedImage(uploadedImage);
             } catch (err: any) {
-                setError(err.message || 'Erreur lors du téléchargement');
+                setError(err.message || 'Error during upload');
             }
         }
 
@@ -83,16 +83,24 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
                 <div className="flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-300 rounded text-red-700 text-xs">
                     <span className="text-base">⚠️</span>
                     <span>
-                        Certaines photos ont une résolution insuffisante. Le checkout sera bloqué tant
-                        qu&apos;elles sont utilisées.
+                        Some photos have insufficient resolution. Checkout will be blocked as long as
+                        they are used.
                     </span>
                 </div>
             )}
 
             {/* Upload zone */}
             <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                role="button"
+                tabIndex={0}
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                    }
+                }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                     e.preventDefault();
@@ -114,7 +122,7 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
                 />
                 <Upload className="w-6 h-6 mx-auto text-gray-400 mb-1" />
                 <p className="text-xs text-gray-500">
-                    {uploading ? 'Téléchargement…' : 'Cliquer ou glisser vos photos ici'}
+                    {uploading ? 'Uploading...' : 'Click or drag your photos here'}
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">JPEG, PNG, WebP, TIFF · Max 50 MB</p>
             </div>
@@ -153,7 +161,7 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img
                                             src={img.thumbUrl}
-                                            alt="Aperçu"
+                                            alt="Preview"
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
@@ -174,7 +182,7 @@ export const ImageUploadPanel: React.FC<ImageUploadPanelProps> = ({
             )}
 
             {uploadedImages.length === 0 && !uploading && (
-                <p className="text-xs text-gray-400 text-center mt-2">Aucune photo téléchargée</p>
+                <p className="text-xs text-gray-400 text-center mt-2">No photos uploaded</p>
             )}
         </div>
     );
