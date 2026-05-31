@@ -30,21 +30,26 @@ export class AdminService {
       sortOrder = 'DESC',
     } = filters;
 
+    // Whitelist sortBy and sortOrder to prevent SQL injection
+    const allowedSortBy = ['createdAt', 'total', 'status'];
+    const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
+    const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
     const query = this.ordersRepository.createQueryBuilder('order');
 
     if (status) {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
-
-    const orders = await query
+    // Optimization: Use getManyAndCount() to reduce database roundtrips
+    // Use loadRelationCountAndMap to fetch items count without loading full OrderItem entities (which contain large designJson)
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
-      .leftJoinAndSelect('order.items', 'items')
-      .orderBy(`order.${sortBy}`, sortOrder)
+      .loadRelationCountAndMap('order.itemsCount', 'order.items')
+      .orderBy(`order.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -53,7 +58,7 @@ export class AdminService {
         userId: order.userId,
         status: order.status,
         total: order.total,
-        itemsCount: order.items?.length || 0,
+        itemsCount: order.itemsCount || 0,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         trackingNumber: order.trackingNumber,
@@ -151,9 +156,6 @@ export class AdminService {
   }
 
   async getOrderAnalytics() {
-    // Total orders count
-    const totalOrders = await this.ordersRepository.count();
-
     // Orders by status
     const ordersByStatus = await this.ordersRepository
       .createQueryBuilder('order')
@@ -177,16 +179,10 @@ export class AdminService {
       .select('AVG(order.total)', 'average')
       .getRawOne();
 
-    // Recent orders (last 7 days)
+    // Orders by day (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const recentOrders = await this.ordersRepository
-      .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .getCount();
-
-    // Orders by day (last 7 days)
     const ordersByDay = await this.ordersRepository
       .createQueryBuilder('order')
       .select('DATE(order.createdAt)', 'date')
@@ -195,6 +191,10 @@ export class AdminService {
       .groupBy('DATE(order.createdAt)')
       .orderBy('DATE(order.createdAt)', 'ASC')
       .getRawMany();
+
+    // Optimization: Derive total_orders and recentOrders from already fetched data to reduce database queries
+    const totalOrders = ordersByStatus.reduce((sum, item) => sum + parseInt(item.count, 10), 0);
+    const recentOrders = ordersByDay.reduce((sum, item) => sum + parseInt(item.count, 10), 0);
 
     return {
       summary: {
@@ -335,18 +335,17 @@ export class AdminService {
       query.andWhere('review.rating = :rating', { rating });
     }
 
-    const total = await query.getCount();
-
     // Whitelist sortBy fields to prevent SQL injection
     const allowedSortBy = ['createdAt', 'rating', 'helpfulCount'];
     const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
     const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const reviews = await query
+    // Optimization: Use getManyAndCount() to reduce database roundtrips
+    const [reviews, total] = await query
       .orderBy(`review.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: reviews,
