@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { User } from '../auth/entities/user.entity';
 import { OrderItem } from './order-item.entity';
 
@@ -16,12 +16,14 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
   @Column({ name: 'user_id', type: 'uuid', nullable: true })
   userId: string;
 
   @Column({ name: 'guest_email', type: 'varchar', length: 255, nullable: true })
   guestEmail: string;
 
+  @Index()
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING_PAYMENT })
   status: OrderStatus;
 
