@@ -74,11 +74,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Link href={`/editor?productId=${product.id}`} className="w-full">
-              <Button variant="primary" size="sm" fullWidth>
-                Customize
-              </Button>
-            </Link>
+            <Button variant="primary" size="sm" fullWidth asChild>
+              <Link href={`/editor?productId=${product.id}`}>Customize</Link>
+            </Button>
             <Button variant="secondary" size="sm">
               Add to Cart
             </Button>
