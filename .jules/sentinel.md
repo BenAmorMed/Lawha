@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-05-30 - [SQL Injection in Admin Order Queries]
+**Vulnerability:** The `AdminController.getAllOrders` endpoint accepted `sortBy` and `sortOrder` query parameters that were passed directly to a TypeORM `orderBy` clause without runtime whitelisting, potentially allowing SQL injection if TypeScript types were bypassed.
+**Learning:** Even with TypeScript types, runtime validation is essential for any input used in dynamic query construction (like `ORDER BY` or `WHERE` clauses) because external API clients can send arbitrary strings.
+**Prevention:** Implement strict manual whitelisting for all dynamic query parameters in services. Use `getManyAndCount()` to consolidate queries and always throw `BadRequestException` (HTTP 400) for invalid inputs to avoid leaking internal error details.
