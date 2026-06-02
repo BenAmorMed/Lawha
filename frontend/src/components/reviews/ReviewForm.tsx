@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { reviewsApi } from '@/api/reviews-api';
+import { Star } from 'lucide-react';
 
 interface ReviewFormProps {
   productId: string;
@@ -62,14 +64,14 @@ export default function ReviewForm({
 
   if (!user) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-        <p className="text-blue-900 mb-4">Sign in to leave a review</p>
-        <a
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 text-center">
+        <p className="text-primary-dark mb-4">Sign in to leave a review</p>
+        <Link
           href="/login"
-          className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          className="inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium"
         >
           Sign In
-        </a>
+        </Link>
       </div>
     );
   }
@@ -89,17 +91,25 @@ export default function ReviewForm({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Rating
         </label>
-        <div className="flex gap-2">
+        <div
+          className="flex gap-2"
+          role="radiogroup"
+          aria-label="Rate this product"
+        >
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               type="button"
+              role="radio"
+              aria-checked={star === rating}
+              aria-label={`${star} star${star > 1 ? 's' : ''}`}
               onClick={() => setRating(star)}
-              className={`text-3xl transition ${
-                star <= rating ? 'text-yellow-400' : 'text-gray-300'
-              }`}
+              className="transition-colors p-1 rounded-md focus-visible:ring-2 focus-visible:ring-primary outline-none"
             >
-              ★
+              <Star
+                size={24}
+                className={star <= rating ? 'text-star fill-star' : 'text-gray-300'}
+              />
             </button>
           ))}
         </div>
@@ -117,7 +127,7 @@ export default function ReviewForm({
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g., Beautiful quality, fast delivery"
           maxLength={100}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
         />
         <p className="text-xs text-gray-600 mt-1">
           {title.length}/100 characters
@@ -135,7 +145,7 @@ export default function ReviewForm({
           placeholder="Share your experience with this product..."
           maxLength={1000}
           rows={5}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
         />
         <p className="text-xs text-gray-600 mt-1">
           {comment.length}/1000 characters
@@ -145,7 +155,7 @@ export default function ReviewForm({
       <button
         type="submit"
         disabled={loading || title.length === 0 || comment.length === 0}
-        className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 font-medium transition"
+        className="w-full px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:bg-gray-300 font-medium transition-colors"
       >
         {loading ? 'Submitting...' : 'Submit Review'}
       </button>
