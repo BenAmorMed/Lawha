@@ -36,15 +36,13 @@ export class AdminService {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
-
-    const orders = await query
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
-      .leftJoinAndSelect('order.items', 'items')
+      .loadRelationCountAndMap('order.itemsCount', 'order.items')
       .orderBy(`order.${sortBy}`, sortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -53,7 +51,7 @@ export class AdminService {
         userId: order.userId,
         status: order.status,
         total: order.total,
-        itemsCount: order.items?.length || 0,
+        itemsCount: order.itemsCount || 0,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         trackingNumber: order.trackingNumber,
@@ -162,19 +160,14 @@ export class AdminService {
       .groupBy('order.status')
       .getRawMany();
 
-    // Revenue (total amount from completed orders)
-    const revenue = await this.ordersRepository
+    // Combined query for summary statistics
+    const summaryStats = await this.ordersRepository
       .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
-      })
-      .getRawOne();
-
-    // Average order value
-    const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
+      .select(
+        "SUM(CASE WHEN order.status IN ('shipped', 'delivered') THEN order.total ELSE 0 END)",
+        'revenue',
+      )
+      .addSelect('AVG(order.total)', 'average')
       .getRawOne();
 
     // Recent orders (last 7 days)
@@ -199,8 +192,8 @@ export class AdminService {
     return {
       summary: {
         total_orders: totalOrders,
-        revenue: parseFloat(revenue?.total || 0),
-        average_order_value: parseFloat(avgValue?.average || 0),
+        revenue: parseFloat(summaryStats?.revenue || 0),
+        average_order_value: parseFloat(summaryStats?.average || 0),
         orders_last_7_days: recentOrders,
       },
       status_breakdown: ordersByStatus.reduce(
@@ -335,18 +328,16 @@ export class AdminService {
       query.andWhere('review.rating = :rating', { rating });
     }
 
-    const total = await query.getCount();
-
     // Whitelist sortBy fields to prevent SQL injection
     const allowedSortBy = ['createdAt', 'rating', 'helpfulCount'];
     const safeSortBy = allowedSortBy.includes(sortBy) ? sortBy : 'createdAt';
     const safeSortOrder = sortOrder === 'ASC' ? 'ASC' : 'DESC';
 
-    const reviews = await query
+    const [reviews, total] = await query
       .orderBy(`review.${safeSortBy}`, safeSortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: reviews,
