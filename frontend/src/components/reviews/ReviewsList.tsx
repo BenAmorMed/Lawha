@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Star } from 'lucide-react';
 import { reviewsApi, Review } from '@/api/reviews-api';
 
 interface ReviewsListProps {
@@ -64,14 +65,14 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
   const renderStars = (rating: number) => {
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-0.5" role="img" aria-label={`Rating: ${rating} out of 5 stars`}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <span
+          <Star
             key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
-          >
-            ★
-          </span>
+            size={16}
+            className={star <= rating ? 'fill-star text-star' : 'fill-gray-200 text-gray-200'}
+            aria-hidden="true"
+          />
         ))}
       </div>
     );
@@ -113,9 +114,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                     <span className="text-sm text-gray-600 min-w-fit">
                       {stars} star
                     </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-yellow-400 h-2 rounded-full"
+                        className="bg-star h-2 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -173,7 +174,7 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
       {!loading && reviews.length > 0 && (
         <div className="space-y-6">
           {reviews.map((review) => (
-            <div key={review.id} className="pb-6 border-b border-gray-200 last:border-0">
+            <div key={review.id} className="pb-8 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors -mx-4 px-4 rounded-xl">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
