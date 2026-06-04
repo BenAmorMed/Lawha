@@ -32,76 +32,80 @@ export default function ProductReviewsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-6">
+      <header className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-8">
           <Link
             href={`/products/${productId}`}
-            className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-block"
+            className="text-primary hover:text-primary-dark font-bold text-xs uppercase tracking-widest mb-4 inline-flex items-center gap-1 group transition-colors"
           >
-            ← Back to Product
+            <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to Product
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Product Reviews</h1>
-          <p className="text-gray-600 mt-1">
-            Read and share feedback from other customers
+          <h1 className="font-playfair text-4xl font-bold text-dark mt-2">Product Reviews</h1>
+          <p className="text-gray-500 mt-2 text-lg">
+            Read and share feedback from our community
           </p>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-3 gap-8">
+      <main className="max-w-6xl mx-auto px-4 py-12">
+        <div className="grid md:grid-cols-3 gap-12">
           {/* Main Content */}
-          <div className="md:col-span-2">
-            {/* Review Form */}
-            {user && (
-              <div className="mb-12">
-                <ReviewForm
-                  productId={productId}
-                  orderId={orderId}
-                  onSuccess={() => setReviewAdded(!reviewAdded)}
-                />
-              </div>
-            )}
+          <div className="md:col-span-2 space-y-12">
+            {/* Review Form (Always show, component handles unauth state) */}
+            <ReviewForm
+              productId={productId}
+              orderId={orderId}
+              onSuccess={() => setReviewAdded(!reviewAdded)}
+            />
 
             {/* Reviews List */}
             <ReviewsList productId={productId} onReviewAdded={() => setReviewAdded(!reviewAdded)} />
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Info Box */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="font-bold text-gray-900 mb-4">About Reviews</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li>✓ Verified purchases show with a badge</li>
-                <li>✓ Your review helps other customers</li>
-                <li>✓ Be honest and helpful</li>
-                <li>✓ Reviews can be edited anytime</li>
+            <div className="bg-white rounded-xl border border-gray-100 p-8 shadow-sm">
+              <h3 className="font-bold text-dark mb-4 tracking-wider text-sm uppercase">About Reviews</h3>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <span className="text-primary font-bold">✓</span> Verified purchases show with a badge
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-primary font-bold">✓</span> Your review helps other customers
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-primary font-bold">✓</span> Be honest and helpful
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-primary font-bold">✓</span> Reviews can be edited anytime
+                </li>
               </ul>
             </div>
 
             {/* Review Guidelines */}
-            <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-              <h3 className="font-bold text-blue-900 mb-3">Review Guidelines</h3>
-              <ul className="space-y-2 text-sm text-blue-900">
-                <li>• Use 5-100 character titles</li>
-                <li>• Write 10-1000 character reviews</li>
-                <li>• Rate from 1-5 stars</li>
-                <li>• Be constructive and specific</li>
-                <li>• Avoid spoilers</li>
+            <div className="bg-primary/5 rounded-xl border border-primary/10 p-8 shadow-sm">
+              <h3 className="font-bold text-primary-dark mb-4 tracking-wider text-sm uppercase">Review Guidelines</h3>
+              <ul className="space-y-3 text-sm text-primary-dark/80 font-medium">
+                <li className="flex items-start gap-2">• Use 5-100 character titles</li>
+                <li className="flex items-start gap-2">• Write 10-1000 character reviews</li>
+                <li className="flex items-start gap-2">• Rate from 1-5 stars</li>
+                <li className="flex items-start gap-2">• Be constructive and specific</li>
+                <li className="flex items-start gap-2">• Avoid spoilers</li>
               </ul>
             </div>
 
             {/* Your Reviews */}
             {user && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="font-bold text-gray-900 mb-3">Your Reviews</h3>
+              <div className="bg-white rounded-xl border border-gray-100 p-8 shadow-sm">
+                <h3 className="font-bold text-dark mb-4 tracking-wider text-sm uppercase">Your Activity</h3>
                 <Link
                   href="/reviews/my-reviews"
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  className="text-primary hover:text-primary-dark text-sm font-bold flex items-center gap-2 transition-colors"
                 >
-                  View all your reviews →
+                  View all your reviews <span className="text-lg">→</span>
                 </Link>
               </div>
             )}
