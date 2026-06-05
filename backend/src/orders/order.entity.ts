@@ -53,6 +53,8 @@ export class Order {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
+  itemsCount: number;
+
   @OneToMany(() => OrderItem, (item) => item.order)
   items: OrderItem[];
 }
