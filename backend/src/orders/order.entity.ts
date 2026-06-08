@@ -55,4 +55,10 @@ export class Order {
 
   @OneToMany(() => OrderItem, (item) => item.order)
   items: OrderItem[];
+
+  /**
+   * Virtual property to store the count of items in the order.
+   * This is populated using TypeORM's loadRelationCountAndMap.
+   */
+  itemsCount?: number;
 }
