@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Star, ThumbsUp } from 'lucide-react';
 import { reviewsApi, Review } from '@/api/reviews-api';
 
 interface ReviewsListProps {
@@ -64,14 +65,13 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
   const renderStars = (rating: number) => {
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
-          <span
+          <Star
             key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
-          >
-            ★
-          </span>
+            size={16}
+            className={star <= rating ? 'text-star fill-star' : 'text-gray-200 fill-transparent'}
+          />
         ))}
       </div>
     );
@@ -113,9 +113,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                     <span className="text-sm text-gray-600 min-w-fit">
                       {stars} star
                     </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-yellow-400 h-2 rounded-full"
+                        className="bg-star h-full rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -150,9 +150,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-600 mt-2">Loading reviews...</p>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+          <p className="text-gray-400 text-sm mt-4 font-medium uppercase tracking-widest">Loading reviews...</p>
         </div>
       )}
 
@@ -196,9 +196,11 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
               <button
                 onClick={() => handleMarkHelpful(review.id)}
-                className="text-sm text-gray-600 hover:text-gray-900 border-b border-gray-300 hover:border-gray-900"
+                className="inline-flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-primary transition-colors py-1 px-2 -ml-2 rounded-md hover:bg-secondary"
+                aria-label="Mark this review as helpful"
               >
-                👍 Helpful ({review.helpfulCount})
+                <ThumbsUp size={14} />
+                <span className="uppercase tracking-wider">Helpful ({review.helpfulCount})</span>
               </button>
             </div>
           ))}
