@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
 import { ProductSize } from './entities/product-size.entity';
 import { FrameOption } from './entities/frame-option.entity';
@@ -20,6 +20,7 @@ export class Product {
   @Column({ name: 'current_price', type: 'decimal', precision: 10, scale: 2 })
   currentPrice: number;
 
+  @Index() // Performance: Optimize filtering by category in ProductsService.getAllProducts
   @Column({ type: 'varchar', length: 100 })
   category: string;
 
@@ -44,6 +45,7 @@ export class Product {
   @Column({ name: 'stock_quantity', type: 'int', default: 0 })
   stockQuantity: number;
 
+  @Index() // Performance: Optimize filtering by active status in ProductsService.getAllProducts
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
