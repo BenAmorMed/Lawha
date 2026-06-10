@@ -4,6 +4,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
+  asChild?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -11,6 +12,7 @@ const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
+  asChild = false,
   className = '',
   ...props
 }) => {
@@ -29,12 +31,17 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const widthStyles = fullWidth ? 'w-full' : '';
+  const combinedClassName = `${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`;
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      className: `${combinedClassName} ${children.props.className || ''}`,
+      ...props,
+    });
+  }
 
   return (
-    <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`}
-      {...props}
-    >
+    <button className={combinedClassName} {...props}>
       {children}
     </button>
   );
