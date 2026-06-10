@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/auth-api';
 import { useAuthStore } from '@/store/authStore';
+import Button from '@/components/ui/Button';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card */}
         <div className="bg-white rounded-lg shadow-xl p-8">
@@ -57,7 +58,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="you@example.com"
                 required
               />
@@ -74,7 +75,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="••••••••"
                 required
               />
@@ -88,13 +89,13 @@ export default function LoginPage() {
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium transition-colors"
+              fullWidth
             >
               {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            </Button>
           </form>
 
           {/* Divider */}
@@ -111,17 +112,24 @@ export default function LoginPage() {
           <div className="text-center">
             <p className="text-gray-600 text-sm">
               Don't have an account?{' '}
-              <Link href="/register" className="text-blue-500 hover:text-blue-600 font-medium">
+              <Link href="/register" className="text-primary hover:text-primary-dark font-medium">
                 Sign up here
               </Link>
             </p>
           </div>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-3 bg-blue-50 rounded-lg text-sm text-gray-700 border border-blue-200">
+          <div className="mt-6 p-3 bg-pink-50 rounded-lg text-sm text-gray-700 border border-pink-100">
             <p className="font-medium mb-2">Demo Credentials:</p>
-            <p>Email: demo@example.com</p>
-            <p>Password: Demo123456</p>
+            <button
+              type="button"
+              onClick={() => { setEmail('demo@example.com'); setPassword('Demo123456'); }}
+              className="w-full text-left hover:bg-pink-100 p-1 rounded transition-colors"
+              title="Click to autofill"
+            >
+              <p>Email: demo@example.com</p>
+              <p>Password: Demo123456</p>
+            </button>
           </div>
         </div>
 
