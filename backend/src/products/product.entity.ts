@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
 import { ProductSize } from './entities/product-size.entity';
 import { FrameOption } from './entities/frame-option.entity';
@@ -17,9 +17,11 @@ export class Product {
   @Column({ name: 'original_price', type: 'decimal', precision: 10, scale: 2, nullable: true })
   originalPrice: number;
 
+  @Index() // Optimized for sorting and filtering by price
   @Column({ name: 'current_price', type: 'decimal', precision: 10, scale: 2 })
   currentPrice: number;
 
+  @Index() // Optimized for filtering by category
   @Column({ type: 'varchar', length: 100 })
   category: string;
 
@@ -29,9 +31,11 @@ export class Product {
   @Column({ type: 'simple-array', nullable: true })
   images: string[];
 
+  @Index() // Optimized for sorting by rating
   @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
   rating: number;
 
+  @Index() // Optimized for sorting by popularity
   @Column({ name: 'reviews_count', type: 'int', default: 0 })
   reviewsCount: number;
 
@@ -44,6 +48,7 @@ export class Product {
   @Column({ name: 'stock_quantity', type: 'int', default: 0 })
   stockQuantity: number;
 
+  @Index() // Optimized for filtering active products
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
