@@ -22,7 +22,11 @@ interface ProductCardProps {
   product: Product;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+/**
+ * ProductCard component optimized with React.memo to prevent unnecessary re-renders
+ * when the product list is filtered or sorted.
+ */
+const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) => {
   return (
     <div className="group flex flex-col h-full border border-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white">
       {/* Image Container */}
@@ -87,6 +91,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
     </div>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;
