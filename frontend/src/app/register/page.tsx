@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/auth-api';
+import Button from '@/components/ui/Button';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -47,21 +48,23 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-secondary flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card */}
-        <div className="bg-white rounded-lg shadow-xl p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Lawha</h1>
-            <p className="text-gray-600 mt-2">Create Your Account</p>
+            <Link href="/" className="inline-block">
+              <h1 className="font-playfair text-4xl font-bold text-primary">Lawha</h1>
+            </Link>
+            <p className="text-gray-500 mt-2 font-medium tracking-tight">Create Your Account</p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Full Name */}
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="fullName" className="block text-sm font-semibold text-dark mb-1.5">
                 Full Name
               </label>
               <input
@@ -70,14 +73,14 @@ export default function RegisterPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-50 transition-all"
                 placeholder="John Doe"
               />
             </div>
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-semibold text-dark mb-1.5">
                 Email Address
               </label>
               <input
@@ -86,7 +89,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-50 transition-all"
                 placeholder="you@example.com"
                 required
               />
@@ -94,7 +97,7 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-semibold text-dark mb-1.5">
                 Password
               </label>
               <input
@@ -103,16 +106,16 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-50 transition-all"
                 placeholder="••••••••"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">At least 8 characters</p>
+              <p className="text-[10px] text-gray-500 mt-1 font-medium uppercase tracking-wider">At least 8 characters</p>
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-dark mb-1.5">
                 Confirm Password
               </label>
               <input
@@ -121,7 +124,7 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-50 transition-all"
                 placeholder="••••••••"
                 required
               />
@@ -129,50 +132,51 @@ export default function RegisterPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
+                <p className="text-sm text-red-600 font-medium">{error}</p>
               </div>
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium transition-colors"
+              fullWidth
+              size="lg"
             >
-              {loading ? 'Creating Account...' : 'Sign Up'}
-            </button>
+              {loading ? 'Creating Account...' : 'SIGN UP'}
+            </Button>
           </form>
 
           {/* Divider */}
-          <div className="my-6 relative">
+          <div className="my-8 relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-gray-200"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-3 bg-white text-gray-400 uppercase tracking-widest font-bold">or</span>
             </div>
           </div>
 
           {/* Login Link */}
           <div className="text-center">
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-500 text-sm font-medium">
               Already have an account?{' '}
-              <Link href="/login" className="text-blue-500 hover:text-blue-600 font-medium">
-                Sign in here
+              <Link href="/login" className="text-primary hover:text-primary-dark font-bold">
+                SIGN IN HERE
               </Link>
             </p>
           </div>
 
           {/* Terms */}
-          <div className="mt-6 text-xs text-gray-600 text-center">
+          <div className="mt-8 text-[10px] text-gray-400 text-center font-medium uppercase tracking-tight">
             <p>
               By signing up, you agree to our{' '}
-              <Link href="#" className="text-blue-500 hover:text-blue-600">
-                Terms of Service
+              <Link href="#" className="text-primary hover:underline">
+                Terms
               </Link>{' '}
               and{' '}
-              <Link href="#" className="text-blue-500 hover:text-blue-600">
+              <Link href="#" className="text-primary hover:underline">
                 Privacy Policy
               </Link>
             </p>
@@ -180,8 +184,8 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6 text-white text-sm">
-          <p>© 2026 Lawha. All rights reserved.</p>
+        <div className="text-center mt-8 text-gray-400 text-xs">
+          <p>© {new Date().getFullYear()} Lawha. All rights reserved.</p>
         </div>
       </div>
     </div>
