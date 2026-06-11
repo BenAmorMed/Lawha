@@ -74,11 +74,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Link href={`/editor?productId=${product.id}`} className="w-full">
-              <Button variant="primary" size="sm" fullWidth>
+            <Button asChild variant="primary" size="sm" fullWidth>
+              <Link href={`/editor?productId=${product.id}`}>
                 Customize
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <Button variant="secondary" size="sm">
               Add to Cart
             </Button>
@@ -89,4 +89,4 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);
