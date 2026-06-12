@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-06-12 - [Hardcoded JWT Secrets and Insecure Configuration Defaults]
+**Vulnerability:** The `AuthModule` and `JwtStrategy` used hardcoded fallback strings for `JWT_SECRET`, which could lead to insecure production deployments if the environment variable was missing.
+**Learning:** Using `configService.get(KEY, DEFAULT)` for sensitive secrets provides a false sense of security and bypasses environment validation.
+**Prevention:** Use `configService.getOrThrow<string>('JWT_SECRET')` to ensure the application fails fast during startup if critical security configuration is missing.
