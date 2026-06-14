@@ -14,7 +14,11 @@ export default function ProductReviewsPage() {
   const { user } = useAuthStore();
   const productId = params.id as string;
   const orderId = searchParams.get('orderId') || undefined;
-  const [reviewAdded, setReviewAdded] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleReviewSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   if (!productId) {
     return (
@@ -23,7 +27,7 @@ export default function ProductReviewsPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Product Not Found
           </h1>
-          <Link href="/gallery" className="text-blue-600 hover:text-blue-700">
+          <Link href="/gallery" className="text-primary hover:text-primary-dark font-medium">
             Back to Products
           </Link>
         </div>
@@ -38,7 +42,7 @@ export default function ProductReviewsPage() {
         <div className="max-w-6xl mx-auto px-4 py-6">
           <Link
             href={`/products/${productId}`}
-            className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-block"
+            className="text-primary hover:text-primary-dark font-medium mb-4 inline-block"
           >
             ← Back to Product
           </Link>
@@ -54,18 +58,16 @@ export default function ProductReviewsPage() {
           {/* Main Content */}
           <div className="md:col-span-2">
             {/* Review Form */}
-            {user && (
-              <div className="mb-12">
-                <ReviewForm
-                  productId={productId}
-                  orderId={orderId}
-                  onSuccess={() => setReviewAdded(!reviewAdded)}
-                />
-              </div>
-            )}
+            <div className="mb-12">
+              <ReviewForm
+                productId={productId}
+                orderId={orderId}
+                onSuccess={handleReviewSuccess}
+              />
+            </div>
 
             {/* Reviews List */}
-            <ReviewsList productId={productId} onReviewAdded={() => setReviewAdded(!reviewAdded)} />
+            <ReviewsList productId={productId} refreshTrigger={refreshTrigger} />
           </div>
 
           {/* Sidebar */}
@@ -82,9 +84,9 @@ export default function ProductReviewsPage() {
             </div>
 
             {/* Review Guidelines */}
-            <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-              <h3 className="font-bold text-blue-900 mb-3">Review Guidelines</h3>
-              <ul className="space-y-2 text-sm text-blue-900">
+            <div className="bg-pink-50 rounded-lg border border-pink-100 p-6">
+              <h3 className="font-bold text-primary mb-3">Review Guidelines</h3>
+              <ul className="space-y-2 text-sm text-gray-700">
                 <li>• Use 5-100 character titles</li>
                 <li>• Write 10-1000 character reviews</li>
                 <li>• Rate from 1-5 stars</li>
@@ -99,7 +101,7 @@ export default function ProductReviewsPage() {
                 <h3 className="font-bold text-gray-900 mb-3">Your Reviews</h3>
                 <Link
                   href="/reviews/my-reviews"
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  className="text-primary hover:text-primary-dark text-sm font-medium"
                 >
                   View all your reviews →
                 </Link>

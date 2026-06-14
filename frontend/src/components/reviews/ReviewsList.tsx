@@ -5,10 +5,10 @@ import { reviewsApi, Review } from '@/api/reviews-api';
 
 interface ReviewsListProps {
   productId: string;
-  onReviewAdded?: () => void;
+  refreshTrigger?: number;
 }
 
-export default function ReviewsList({ productId, onReviewAdded }: ReviewsListProps) {
+export default function ReviewsList({ productId, refreshTrigger }: ReviewsListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState({
     averageRating: 0,
@@ -22,7 +22,7 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
   useEffect(() => {
     fetchReviews();
     fetchStats();
-  }, [productId, sortBy, onReviewAdded]);
+  }, [productId, sortBy, refreshTrigger]);
 
   const fetchReviews = async () => {
     try {
