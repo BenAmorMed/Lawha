@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/auth-api';
 import { useAuthStore } from '@/store/authStore';
+import Button from '@/components/ui/Button';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,8 +34,13 @@ export default function LoginPage() {
     }
   };
 
+  const handleAutofill = () => {
+    setEmail('demo@example.com');
+    setPassword('Demo123456');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card */}
         <div className="bg-white rounded-lg shadow-xl p-8">
@@ -57,7 +63,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="you@example.com"
                 required
               />
@@ -74,7 +80,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="••••••••"
                 required
               />
@@ -88,13 +94,13 @@ export default function LoginPage() {
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium transition-colors"
+              fullWidth
             >
               {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            </Button>
           </form>
 
           {/* Divider */}
@@ -111,18 +117,26 @@ export default function LoginPage() {
           <div className="text-center">
             <p className="text-gray-600 text-sm">
               Don't have an account?{' '}
-              <Link href="/register" className="text-blue-500 hover:text-blue-600 font-medium">
+              <Link href="/register" className="text-primary hover:text-primary-dark font-medium">
                 Sign up here
               </Link>
             </p>
           </div>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-3 bg-blue-50 rounded-lg text-sm text-gray-700 border border-blue-200">
-            <p className="font-medium mb-2">Demo Credentials:</p>
-            <p>Email: demo@example.com</p>
-            <p>Password: Demo123456</p>
-          </div>
+          <button
+            type="button"
+            onClick={handleAutofill}
+            className="w-full mt-6 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm text-gray-700 border border-gray-200 text-left transition-colors group"
+            aria-label="Autofill demo credentials"
+          >
+            <span className="block font-medium mb-1 text-primary group-hover:text-primary-dark flex justify-between items-center">
+              Demo Credentials:
+              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded uppercase tracking-wider font-bold">Click to autofill</span>
+            </span>
+            <span className="block text-gray-500">Email: <span className="text-gray-800">demo@example.com</span></span>
+            <span className="block text-gray-500">Password: <span className="text-gray-800">Demo123456</span></span>
+          </button>
         </div>
 
         {/* Footer */}
