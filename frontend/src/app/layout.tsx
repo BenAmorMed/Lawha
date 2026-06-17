@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
+import BackToTop from "@/components/ui/BackToTop";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -25,7 +26,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${playfair.variable} ${poppins.variable}`}>
-      <body className="font-poppins text-dark">{children}</body>
+      <body className="font-poppins text-dark">
+        {children}
+        <BackToTop />
+      </body>
     </html>
   );
 }
