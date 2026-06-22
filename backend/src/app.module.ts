@@ -30,7 +30,7 @@ import { ReviewsModule } from './reviews/reviews.module';
         host: configService.get('DB_HOST', 'localhost'),
         port: configService.get('DB_PORT', 5432),
         username: configService.get('DB_USERNAME', 'canvas_user'),
-        password: configService.get('DB_PASSWORD', 'canvas_secret'),
+        password: configService.getOrThrow('DB_PASSWORD'),
         database: configService.get('DB_NAME', 'canvas_platform'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         ssl: { rejectUnauthorized: false },
