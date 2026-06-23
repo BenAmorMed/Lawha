@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-06-23 - [SQL Injection in Admin Sorting]
+**Vulnerability:** The `AdminService.getAllOrders` endpoint allowed arbitrary strings to be passed into the `orderBy` clause, enabling potential SQL injection.
+**Learning:** Even when using a QueryBuilder, dynamic identifiers (like column names) are not automatically parameterized and must be whitelisted.
+**Prevention:** Always use an explicit whitelist for `sortBy` and `sortOrder` parameters before passing them to `.orderBy()`.
