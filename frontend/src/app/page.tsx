@@ -95,12 +95,17 @@ export default function Home() {
                 High-quality personalized prints and gifts for every occasion. Make it special, make it yours.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <Link href="/products">
-                  <Button size="lg" className="w-full sm:w-auto">SHOP NOW</Button>
-                </Link>
-                <Link href="/editor">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">CREATE YOUR OWN</Button>
-                </Link>
+                <Button href="/products" size="lg" className="w-full sm:w-auto">
+                  SHOP NOW
+                </Button>
+                <Button
+                  href="/editor"
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  CREATE YOUR OWN
+                </Button>
               </div>
             </div>
 
@@ -171,9 +176,14 @@ export default function Home() {
                   <div className="p-12 md:p-20 md:w-1/2 text-white z-10 text-center md:text-left">
                     <h2 className="font-playfair text-3xl md:text-5xl font-bold mb-6 leading-tight">Create Your Own <br />Unique Design</h2>
                     <p className="text-white/80 mb-8 text-lg">Use our professional editor to design your own products from scratch. Upload photos, add text, and choose effects.</p>
-                    <Link href="/editor">
-                      <Button variant="secondary" size="lg" className="bg-white text-primary hover:bg-gray-100">GO TO EDITOR</Button>
-                    </Link>
+                    <Button
+                      href="/editor"
+                      variant="secondary"
+                      size="lg"
+                      className="bg-white text-primary hover:bg-gray-100"
+                    >
+                      GO TO EDITOR
+                    </Button>
                   </div>
                   <div className="relative md:w-1/2 h-[300px] md:h-[500px] w-full">
                     <Image
