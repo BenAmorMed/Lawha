@@ -1,10 +1,21 @@
 import React from 'react';
+import Link from 'next/link';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface BaseButtonProps {
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
 }
+
+interface ButtonAsButtonProps extends BaseButtonProps, React.ButtonHTMLAttributes<HTMLButtonElement> {
+  href?: never;
+}
+
+interface ButtonAsLinkProps extends BaseButtonProps, React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  href: string;
+}
+
+type ButtonProps = ButtonAsButtonProps | ButtonAsLinkProps;
 
 const Button: React.FC<ButtonProps> = ({
   children,
@@ -29,11 +40,21 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const widthStyles = fullWidth ? 'w-full' : '';
+  const combinedClassName = `${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`;
+
+  if ('href' in props && props.href) {
+    const { href, ...linkProps } = props as ButtonAsLinkProps;
+    return (
+      <Link href={href} className={combinedClassName} {...(linkProps as any)}>
+        {children}
+      </Link>
+    );
+  }
 
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyles} ${className}`}
-      {...props}
+      className={combinedClassName}
+      {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
     >
       {children}
     </button>
