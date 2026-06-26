@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-06-26 - [Insecure Hardcoded Secret Fallbacks]
+**Vulnerability:** Critical secrets (JWT_SECRET, DB_PASSWORD, MINIO_SECRET_KEY) were using insecure hardcoded default values in `configService.get()`, which would be used if environment variables were missing.
+**Learning:** Hardcoded fallbacks for secrets are "security theater" that can lead to accidental production deployments with known credentials. NestJS's `getOrThrow()` was available but not utilized.
+**Prevention:** Always use `configService.getOrThrow()` for mandatory security credentials to enforce a fail-fast policy.

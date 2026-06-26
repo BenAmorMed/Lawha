@@ -27,7 +27,7 @@ export class TemplatesService {
         });
 
         if (!template) {
-            throw new NotFoundException(`Template with key \${key} not found`);
+            throw new NotFoundException(`Template with key ${key} not found`);
         }
 
         return template;
