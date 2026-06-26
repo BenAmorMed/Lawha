@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/auth-api';
+import Button from '@/components/ui/Button';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Card */}
         <div className="bg-white rounded-lg shadow-xl p-8">
@@ -70,7 +71,7 @@ export default function RegisterPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="John Doe"
               />
             </div>
@@ -86,7 +87,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="you@example.com"
                 required
               />
@@ -103,7 +104,7 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="••••••••"
                 required
               />
@@ -121,7 +122,7 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                 placeholder="••••••••"
                 required
               />
@@ -135,13 +136,13 @@ export default function RegisterPage() {
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium transition-colors"
+              fullWidth
             >
               {loading ? 'Creating Account...' : 'Sign Up'}
-            </button>
+            </Button>
           </form>
 
           {/* Divider */}
@@ -158,7 +159,7 @@ export default function RegisterPage() {
           <div className="text-center">
             <p className="text-gray-600 text-sm">
               Already have an account?{' '}
-              <Link href="/login" className="text-blue-500 hover:text-blue-600 font-medium">
+              <Link href="/login" className="text-primary hover:text-primary-dark font-medium">
                 Sign in here
               </Link>
             </p>
@@ -168,11 +169,11 @@ export default function RegisterPage() {
           <div className="mt-6 text-xs text-gray-600 text-center">
             <p>
               By signing up, you agree to our{' '}
-              <Link href="#" className="text-blue-500 hover:text-blue-600">
+              <Link href="#" className="text-primary hover:text-primary-dark">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="#" className="text-blue-500 hover:text-blue-600">
+              <Link href="#" className="text-primary hover:text-primary-dark">
                 Privacy Policy
               </Link>
             </p>
