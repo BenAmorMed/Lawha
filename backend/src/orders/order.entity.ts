@@ -55,4 +55,6 @@ export class Order {
 
   @OneToMany(() => OrderItem, (item) => item.order)
   items: OrderItem[];
+
+  itemsCount: number;
 }
