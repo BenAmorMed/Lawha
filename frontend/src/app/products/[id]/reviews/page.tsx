@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
-import ReviewForm from '@/components/reviews/ReviewForm';
-import ReviewsList from '@/components/reviews/ReviewsList';
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
+import ReviewForm from "@/components/reviews/ReviewForm";
+import ReviewsList from "@/components/reviews/ReviewsList";
 
 export default function ProductReviewsPage() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function ProductReviewsPage() {
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const productId = params.id as string;
-  const orderId = searchParams.get('orderId') || undefined;
+  const orderId = searchParams.get("orderId") || undefined;
   const [reviewAdded, setReviewAdded] = useState(false);
 
   if (!productId) {
@@ -54,18 +54,19 @@ export default function ProductReviewsPage() {
           {/* Main Content */}
           <div className="md:col-span-2">
             {/* Review Form */}
-            {user && (
-              <div className="mb-12">
-                <ReviewForm
-                  productId={productId}
-                  orderId={orderId}
-                  onSuccess={() => setReviewAdded(!reviewAdded)}
-                />
-              </div>
-            )}
+            <div className="mb-12">
+              <ReviewForm
+                productId={productId}
+                orderId={orderId}
+                onSuccess={() => setReviewAdded(!reviewAdded)}
+              />
+            </div>
 
             {/* Reviews List */}
-            <ReviewsList productId={productId} onReviewAdded={() => setReviewAdded(!reviewAdded)} />
+            <ReviewsList
+              productId={productId}
+              onReviewAdded={() => setReviewAdded(!reviewAdded)}
+            />
           </div>
 
           {/* Sidebar */}
@@ -83,7 +84,9 @@ export default function ProductReviewsPage() {
 
             {/* Review Guidelines */}
             <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-              <h3 className="font-bold text-blue-900 mb-3">Review Guidelines</h3>
+              <h3 className="font-bold text-blue-900 mb-3">
+                Review Guidelines
+              </h3>
               <ul className="space-y-2 text-sm text-blue-900">
                 <li>• Use 5-100 character titles</li>
                 <li>• Write 10-1000 character reviews</li>
