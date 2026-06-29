@@ -150,66 +150,73 @@ export class AdminService {
     };
   }
 
+  /**
+   * Optimizes analytics by consolidating multiple database queries into just two.
+   * Reduces database roundtrips from 6 down to 2 using conditional aggregation and parallel execution.
+   */
   async getOrderAnalytics() {
-    // Total orders count
-    const totalOrders = await this.ordersRepository.count();
-
-    // Orders by status
-    const ordersByStatus = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('order.status', 'status')
-      .addSelect('COUNT(order.id)', 'count')
-      .groupBy('order.status')
-      .getRawMany();
-
-    // Revenue (total amount from completed orders)
-    const revenue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
-      })
-      .getRawOne();
-
-    // Average order value
-    const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
-      .getRawOne();
-
-    // Recent orders (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const recentOrders = await this.ordersRepository
+    // Query 1: Consolidate total count, revenue, average value, recent orders, and status breakdown
+    // into a single grouped query.
+    const statusQuery = this.ordersRepository
       .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .getCount();
+      .select('order.status', 'status')
+      .addSelect('COUNT(order.id)', 'count')
+      .addSelect('SUM(order.total)', 'revenue')
+      .addSelect('SUM(CASE WHEN order.createdAt >= :date THEN 1 ELSE 0 END)', 'recent_count')
+      .setParameter('date', sevenDaysAgo)
+      .groupBy('order.status');
 
-    // Orders by day (last 7 days)
-    const ordersByDay = await this.ordersRepository
+    // Query 2: Get orders by day for the last 7 days.
+    const ordersByDayQuery = this.ordersRepository
       .createQueryBuilder('order')
       .select('DATE(order.createdAt)', 'date')
       .addSelect('COUNT(order.id)', 'count')
       .where('order.createdAt >= :date', { date: sevenDaysAgo })
       .groupBy('DATE(order.createdAt)')
-      .orderBy('DATE(order.createdAt)', 'ASC')
-      .getRawMany();
+      .orderBy('DATE(order.createdAt)', 'ASC');
+
+    // Execute queries in parallel to minimize total latency
+    const [statusStats, ordersByDay] = await Promise.all([
+      statusQuery.getRawMany(),
+      ordersByDayQuery.getRawMany(),
+    ]);
+
+    // Aggregate values from the consolidated status query
+    let totalOrders = 0;
+    let totalRevenue = 0;
+    let totalValueForAvg = 0;
+    let recentOrdersCount = 0;
+    const statusBreakdown = {};
+
+    statusStats.forEach((stat) => {
+      const count = parseInt(stat.count, 10);
+      const revenue = parseFloat(stat.revenue || 0);
+      const recentCount = parseInt(stat.recent_count || 0, 10);
+      const status = stat.status;
+
+      totalOrders += count;
+      recentOrdersCount += recentCount;
+      totalValueForAvg += revenue;
+
+      // Original logic: revenue only from 'shipped' and 'delivered'
+      if (['shipped', 'delivered'].includes(status)) {
+        totalRevenue += revenue;
+      }
+
+      statusBreakdown[status] = count;
+    });
 
     return {
       summary: {
         total_orders: totalOrders,
-        revenue: parseFloat(revenue?.total || 0),
-        average_order_value: parseFloat(avgValue?.average || 0),
-        orders_last_7_days: recentOrders,
+        revenue: totalRevenue,
+        average_order_value: totalOrders > 0 ? totalValueForAvg / totalOrders : 0,
+        orders_last_7_days: recentOrdersCount,
       },
-      status_breakdown: ordersByStatus.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.status]: parseInt(item.count, 10),
-        }),
-        {},
-      ),
+      status_breakdown: statusBreakdown,
       orders_by_day: ordersByDay.map((item) => ({
         date: item.date,
         count: parseInt(item.count, 10),
