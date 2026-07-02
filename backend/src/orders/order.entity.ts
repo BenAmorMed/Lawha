@@ -55,4 +55,9 @@ export class Order {
 
   @OneToMany(() => OrderItem, (item) => item.order)
   items: OrderItem[];
+
+  /**
+   * Virtual property to store items count when using loadRelationCountAndMap
+   */
+  itemsCount: number;
 }
