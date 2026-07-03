@@ -150,8 +150,8 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="text-center py-8" aria-live="polite">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="text-gray-600 mt-2">Loading reviews...</p>
         </div>
       )}
@@ -196,7 +196,8 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
               <button
                 onClick={() => handleMarkHelpful(review.id)}
-                className="text-sm text-gray-600 hover:text-gray-900 border-b border-gray-300 hover:border-gray-900"
+                className="text-sm text-gray-600 hover:text-primary border-b border-gray-300 hover:border-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-sm"
+                aria-label={`Mark this review as helpful. Currently ${review.helpfulCount} people found this helpful.`}
               >
                 👍 Helpful ({review.helpfulCount})
               </button>
