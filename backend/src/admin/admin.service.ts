@@ -151,65 +151,62 @@ export class AdminService {
   }
 
   async getOrderAnalytics() {
-    // Total orders count
-    const totalOrders = await this.ordersRepository.count();
-
-    // Orders by status
-    const ordersByStatus = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('order.status', 'status')
-      .addSelect('COUNT(order.id)', 'count')
-      .groupBy('order.status')
-      .getRawMany();
-
-    // Revenue (total amount from completed orders)
-    const revenue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
-      })
-      .getRawOne();
-
-    // Average order value
-    const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
-      .getRawOne();
-
-    // Recent orders (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const recentOrders = await this.ordersRepository
-      .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .getCount();
+    // Optimization: Consolidate 5 separate summary queries into 1 grouped query
+    // and execute both remaining queries in parallel to minimize DB roundtrips.
+    const [statusStats, ordersByDay] = await Promise.all([
+      this.ordersRepository
+        .createQueryBuilder('order')
+        .select('order.status', 'status')
+        .addSelect('COUNT(order.id)', 'count')
+        .addSelect('SUM(order.total)', 'sumTotal')
+        .addSelect('SUM(CASE WHEN order.createdAt >= :date THEN 1 ELSE 0 END)', 'recentCount')
+        .setParameter('date', sevenDaysAgo)
+        .groupBy('order.status')
+        .getRawMany(),
+      this.ordersRepository
+        .createQueryBuilder('order')
+        .select('DATE(order.createdAt)', 'date')
+        .addSelect('COUNT(order.id)', 'count')
+        .where('order.createdAt >= :date', { date: sevenDaysAgo })
+        .groupBy('DATE(order.createdAt)')
+        .orderBy('DATE(order.createdAt)', 'ASC')
+        .getRawMany(),
+    ]);
 
-    // Orders by day (last 7 days)
-    const ordersByDay = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('DATE(order.createdAt)', 'date')
-      .addSelect('COUNT(order.id)', 'count')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .groupBy('DATE(order.createdAt)')
-      .orderBy('DATE(order.createdAt)', 'ASC')
-      .getRawMany();
+    let totalOrders = 0;
+    let revenue = 0;
+    let totalAmount = 0;
+    let recentOrders = 0;
+    const statusBreakdown = {};
+
+    const revenueStatuses = ['shipped', 'delivered'];
+
+    statusStats.forEach(item => {
+      const count = parseInt(item.count, 10);
+      const sumTotal = parseFloat(item.sumTotal || 0);
+      const recentCount = parseInt(item.recentCount, 10);
+
+      totalOrders += count;
+      totalAmount += sumTotal;
+      recentOrders += recentCount;
+      statusBreakdown[item.status] = count;
+
+      if (revenueStatuses.includes(item.status)) {
+        revenue += sumTotal;
+      }
+    });
 
     return {
       summary: {
         total_orders: totalOrders,
-        revenue: parseFloat(revenue?.total || 0),
-        average_order_value: parseFloat(avgValue?.average || 0),
+        revenue: revenue,
+        average_order_value: totalOrders > 0 ? totalAmount / totalOrders : 0,
         orders_last_7_days: recentOrders,
       },
-      status_breakdown: ordersByStatus.reduce(
-        (acc, item) => ({
-          ...acc,
-          [item.status]: parseInt(item.count, 10),
-        }),
-        {},
-      ),
+      status_breakdown: statusBreakdown,
       orders_by_day: ordersByDay.map((item) => ({
         date: item.date,
         count: parseInt(item.count, 10),
