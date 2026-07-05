@@ -12,8 +12,8 @@ import { DataSource } from 'typeorm';
 import { EmailService } from '../email/email.service';
 
 // ── Mocks de base ──────────────────────────────────────────────────────────
-const mockSize = { id: 'size-uuid', productId: 'prod-uuid', priceDelta: 10 };
 const mockProduct = { id: 'prod-uuid', currentPrice: 49.90 };
+const mockSize = { id: 'size-uuid', productId: 'prod-uuid', priceDelta: 10, product: mockProduct };
 const mockFrame = { id: 'frame-uuid', priceDelta: 20 };
 
 const mockOrderId = 'order-uuid-1234';
@@ -70,7 +70,7 @@ describe('OrdersService.createOrder', () => {
                 { provide: getRepositoryToken(Order), useValue: {} },
                 { provide: getRepositoryToken(OrderItem), useValue: {} },
                 { provide: getRepositoryToken(PrintJob), useValue: {} },
-                { provide: getRepositoryToken(Product), useValue: { findOneOrFail: jest.fn(async () => mockProduct) } },
+                { provide: getRepositoryToken(Product), useValue: { findOneOrFail: jest.fn() } },
                 { provide: getRepositoryToken(ProductSize), useValue: { findOneOrFail: jest.fn(async () => mockSize) } },
                 { provide: getRepositoryToken(FrameOption), useValue: { findOneOrFail: jest.fn(async () => mockFrame) } },
                 { provide: getDataSourceToken(), useValue: mockDataSource },
