@@ -64,11 +64,11 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
   const renderStars = (rating: number) => {
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-1" aria-hidden="true">
         {[1, 2, 3, 4, 5].map((star) => (
           <span
             key={star}
-            className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}
+            className={star <= rating ? 'text-star' : 'text-gray-300'}
           >
             ★
           </span>
@@ -113,9 +113,9 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
                     <span className="text-sm text-gray-600 min-w-fit">
                       {stars} star
                     </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-yellow-400 h-2 rounded-full"
+                        className="bg-star h-2 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -150,8 +150,8 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="text-center py-8" aria-live="polite">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="text-gray-600 mt-2">Loading reviews...</p>
         </div>
       )}
@@ -196,9 +196,10 @@ export default function ReviewsList({ productId, onReviewAdded }: ReviewsListPro
 
               <button
                 onClick={() => handleMarkHelpful(review.id)}
-                className="text-sm text-gray-600 hover:text-gray-900 border-b border-gray-300 hover:border-gray-900"
+                aria-label={`Mark review by ${review.userEmail || 'Anonymous'} as helpful. Current helpful count: ${review.helpfulCount}`}
+                className="text-sm text-gray-600 hover:text-primary border-b border-transparent hover:border-primary transition-colors flex items-center gap-1"
               >
-                👍 Helpful ({review.helpfulCount})
+                <span aria-hidden="true">👍</span> Helpful ({review.helpfulCount})
               </button>
             </div>
           ))}
