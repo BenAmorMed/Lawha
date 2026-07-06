@@ -36,15 +36,13 @@ export class AdminService {
       query.where('order.status = :status', { status });
     }
 
-    const total = await query.getCount();
-
-    const orders = await query
+    const [orders, total] = await query
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.items', 'items')
       .orderBy(`order.${sortBy}`, sortOrder)
       .skip(offset)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
 
     return {
       data: orders.map((order) => ({
@@ -151,57 +149,52 @@ export class AdminService {
   }
 
   async getOrderAnalytics() {
-    // Total orders count
-    const totalOrders = await this.ordersRepository.count();
-
-    // Orders by status
-    const ordersByStatus = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('order.status', 'status')
-      .addSelect('COUNT(order.id)', 'count')
-      .groupBy('order.status')
-      .getRawMany();
-
-    // Revenue (total amount from completed orders)
-    const revenue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('SUM(order.total)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: ['shipped', 'delivered'],
-      })
-      .getRawOne();
-
-    // Average order value
-    const avgValue = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('AVG(order.total)', 'average')
-      .getRawOne();
-
-    // Recent orders (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const recentOrders = await this.ordersRepository
-      .createQueryBuilder('order')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .getCount();
+    // Optimization: Consolidate 6 sequential queries into 3 parallel ones.
+    // We combine global counts, revenue, and average value into one query using conditional aggregation.
+    // We also derive total recent orders from the daily breakdown query.
+    const [summary, ordersByStatus, ordersByDay] = await Promise.all([
+      this.ordersRepository
+        .createQueryBuilder('order')
+        .select('COUNT(order.id)', 'totalOrders')
+        .addSelect(
+          'SUM(CASE WHEN order.status IN (:...revenueStatuses) THEN order.total ELSE 0 END)',
+          'revenue',
+        )
+        .addSelect('AVG(order.total)', 'average')
+        .setParameter('revenueStatuses', ['shipped', 'delivered'])
+        .getRawOne(),
 
-    // Orders by day (last 7 days)
-    const ordersByDay = await this.ordersRepository
-      .createQueryBuilder('order')
-      .select('DATE(order.createdAt)', 'date')
-      .addSelect('COUNT(order.id)', 'count')
-      .where('order.createdAt >= :date', { date: sevenDaysAgo })
-      .groupBy('DATE(order.createdAt)')
-      .orderBy('DATE(order.createdAt)', 'ASC')
-      .getRawMany();
+      this.ordersRepository
+        .createQueryBuilder('order')
+        .select('order.status', 'status')
+        .addSelect('COUNT(order.id)', 'count')
+        .groupBy('order.status')
+        .getRawMany(),
+
+      this.ordersRepository
+        .createQueryBuilder('order')
+        .select('DATE(order.createdAt)', 'date')
+        .addSelect('COUNT(order.id)', 'count')
+        .where('order.createdAt >= :date', { date: sevenDaysAgo })
+        .groupBy('DATE(order.createdAt)')
+        .orderBy('DATE(order.createdAt)', 'ASC')
+        .getRawMany(),
+    ]);
+
+    const recentOrdersCount = ordersByDay.reduce(
+      (acc, item) => acc + parseInt(item.count, 10),
+      0,
+    );
 
     return {
       summary: {
-        total_orders: totalOrders,
-        revenue: parseFloat(revenue?.total || 0),
-        average_order_value: parseFloat(avgValue?.average || 0),
-        orders_last_7_days: recentOrders,
+        total_orders: parseInt(summary?.totalOrders || 0, 10),
+        revenue: parseFloat(summary?.revenue || 0),
+        average_order_value: parseFloat(summary?.average || 0),
+        orders_last_7_days: recentOrdersCount,
       },
       status_breakdown: ordersByStatus.reduce(
         (acc, item) => ({
