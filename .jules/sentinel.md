@@ -7,3 +7,8 @@
 **Vulnerability:** The `GET /api/v1/images/:id` (metadata) endpoint was public and lacked ownership verification, allowing any user to view image metadata (dimensions, DPI, quality) by ID.
 **Learning:** Security logic must be consistent across all CRUD operations. While `deleteImage` had ownership checks, the metadata endpoint was overlooked.
 **Prevention:** Ensure all endpoints that retrieve or modify user-owned resources include ownership verification. Propagate `userId` to services even for public-facing "metadata" or "status" routes using `OptionalJwtAuthGuard`.
+
+## 2026-07-08 - [Hardcoded Default Secrets in Configuration]
+**Vulnerability:** Critical services (Database, JWT, MinIO) used hardcoded default strings as fallbacks for missing environment variables, allowing potential exploitation if deployed with incomplete configuration.
+**Learning:** Default values for secrets in `configService.get(key, default)` create a "fail-open" scenario where the app runs insecurely rather than stopping.
+**Prevention:** Always use `configService.getOrThrow(key)` for sensitive credentials to enforce a "fail-secure" startup policy that requires explicit environment configuration.
