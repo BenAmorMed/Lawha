@@ -34,7 +34,7 @@ export class ImagesService {
     const port = parseInt(this.configService.get('MINIO_PORT', '9000'), 10);
     const useSSL = this.configService.get('MINIO_USE_SSL', 'false') === 'true';
     const accessKey = this.configService.get('MINIO_ACCESS_KEY', 'minioadmin');
-    const secretKey = this.configService.get('MINIO_SECRET_KEY', 'minioadmin123');
+    const secretKey = this.configService.getOrThrow('MINIO_SECRET_KEY');
 
     this.minioClient = new MinIOClient({
       endPoint: endpoint,
